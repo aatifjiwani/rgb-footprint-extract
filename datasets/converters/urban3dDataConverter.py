@@ -1,10 +1,8 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import georaster
 import json
 import os
 from PIL import Image
-import cv2
 from tqdm import tqdm
 
 class Urban3dDataConverter:

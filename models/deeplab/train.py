@@ -109,7 +109,7 @@ class Trainer(object):
         self.model.train()
         tbar = tqdm(self.train_loader)
 
-        print("Curr Learning Rate x1: {}; Learning Rate x10: {}".format(self.optimizer.param_groups[0]['lr']))
+        print("Curr Learning Rate x1: {}; Learning Rate x10: {}".format(self.optimizer.param_groups[0]['lr'], self.optimizer.param_groups[1]['lr']))
 
         for i, sample in enumerate(tbar):
             image, mask = sample['image'], sample['mask'].long()
@@ -134,7 +134,6 @@ class Trainer(object):
 
             loss.backward()
             self.optimizer.step()
-            if self.scheduler: self.scheduler(self.optimizer, i, epoch)
             
             train_loss = loss.item()
 

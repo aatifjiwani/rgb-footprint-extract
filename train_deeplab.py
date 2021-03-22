@@ -28,7 +28,7 @@ def main():
                         help='whether to use sync bn (default: auto)')
     parser.add_argument('--freeze-bn', type=bool, default=False,
                         help='whether to freeze bn parameters (default: False)')
-    parser.add_argument('--loss-type', type=str, default='ce',
+    parser.add_argument('--loss-type', type=str, default='ce_dice',
                         choices=['ce', 'ce_dice', 'wce_dice'],
                         help='loss func type (default: ce)')
     parser.add_argument('--fbeta', type=float, default=1, help='beta for FBeta-Measure')
@@ -132,7 +132,7 @@ def handle_evaluate(args):
 def handle_training(args):
     trainer = Trainer(args)
 
-    print("Learning rate: {}; {} scheduler; L2 factor: {}".format(args.lr, args.lr_scheduler, args.weight_decay))
+    print("Learning rate: {}; L2 factor: {}".format(args.lr, args.weight_decay))
     print("Experiment {} instantiated. Training starting...".format(args.checkname))
     print("Training for {} epochs".format(trainer.args.epochs))
     print("Batch size: {}; Test Batch Size: {}".format(args.batch_size, args.test_batch_size))

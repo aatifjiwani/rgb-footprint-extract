@@ -22,6 +22,7 @@ class Urban3dDataset(Dataset):
             boundary_kernel_size = None,
             transforms=None,
             resize=2048,
+            split=2
             ):
 
         self.root = root_dir

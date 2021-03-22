@@ -6,8 +6,6 @@ from models.deeplab.modeling.aspp import build_aspp
 from models.deeplab.modeling.decoder import build_decoder
 from models.deeplab.modeling.backbone import build_backbone
 
-from guided_filter_pytorch.guided_filter import GuidedFilter
-
 class DeepLab(nn.Module):
     def __init__(self, backbone='resnet', output_stride=16, num_classes=21,
                  sync_bn=True, freeze_bn=False, dropout_low=0.1, dropout_high=0.5):
@@ -29,10 +27,6 @@ class DeepLab(nn.Module):
 
     def forward(self, input):
         x, low_level_feat = self.backbone(input)
-
-        if self.do_gf:
-            guide = self.guide_conv_1(input)
-            guide = self.guide_conv_2(self.guide_relu(guide))
 
         x = self.aspp(x)
         x = self.decoder(x, low_level_feat)

@@ -23,8 +23,8 @@ def build_dataloader(dataset, data_root, boundary_ks, transforms, resize=2048, s
         train = SpaceNetDataset(os.path.join(data_root, "SpaceNet/Vegas/train"), boundary_ks, transforms)
         val = SpaceNetDataset(os.path.join(data_root, "SpaceNet/Vegas/val"), boundary_ks, transforms)
     elif dataset == "crowdAI":
-        train = CrowdAIDataset(os.path.join(data_root, "AICrowd/train"), boundary_ks, transforms, data_slice=None)
-        val = CrowdAIDataset(os.path.join(data_root, "AICrowd/val"), boundary_ks, transforms, data_slice=None)
+        train = CrowdAIDataset(os.path.join(data_root, "AICrowd/train"), boundary_ks, transforms, data_slice=0.15)
+        val = CrowdAIDataset(os.path.join(data_root, "AICrowd/val"), boundary_ks, transforms, data_slice=0.15)
     elif dataset == "combined":
         train = CombinedDataset(data_root, boundary=(boundary_ks is not None))
         val = CombinedDataset(data_root, boundary=(boundary_ks is not None), train=False)

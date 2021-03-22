@@ -5,7 +5,6 @@ import skimage.io as io
 import numpy as np
 
 from torch.utils.data import Dataset
-from datasets.utils import generate_boundaries
 
 class CrowdAIDataset(Dataset):
     def __init__(

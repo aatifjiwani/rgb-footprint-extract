@@ -17,8 +17,6 @@ from models.utils.custom_transforms import tensor_resize
 
 from datasets import build_test_dataloader
 
-from segmentation_models_pytorch.unet import Unet as UnetRes34
-
 
 class Tester(object):
     def __init__(self, args):
