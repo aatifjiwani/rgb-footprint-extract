@@ -1,6 +1,6 @@
 ## A Semantic Segmentation Network for Urban-Scale Building Footprint Extraction Using RGB Satellite Imagery
 
-This repository is the official implementation of **"A Semantic Segmentation Network for Urban-Scale Building Footprint Extraction Using RGB Satellite Imagery"** by Aatif Jiwani, Shubhrakanti Ganguly, Chao Ding, Nan Zhou, and David Chan. 
+This repository is the official implementation of **[A Semantic Segmentation Network for Urban-Scale Building Footprint Extraction Using RGB Satellite Imagery](https://arxiv.org/abs/2104.01263)** by Aatif Jiwani, Shubhrakanti Ganguly, Chao Ding, Nan Zhou, and David Chan. 
 
 ![model visualization](./imgs/visual.jpg "Title")
 
