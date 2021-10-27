@@ -29,7 +29,7 @@ class Tester(object):
         # Define transforms and Dataloader
         deeplab_collate_fn = None
         transform = None
-        test_dataset = build_test_dataloader(args.dataset, args.data_root, transform)
+        test_dataset = build_test_dataloader(args, transform)
 
         print("Testing on {} samples".format(len(test_dataset)))
         self.test_loader = DataLoader(
