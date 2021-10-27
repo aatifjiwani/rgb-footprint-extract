@@ -2,6 +2,7 @@ from .CrowdAIDataset import CrowdAIDataset
 from .Urban3dDataset import Urban3dDataset
 from .SpaceNetDataset import SpaceNetDataset
 from .CombinedDataset import CombinedDataset
+from .TileDataset import TileInferenceDataset
 import os
 
 
@@ -33,12 +34,14 @@ def build_dataloader(dataset, data_root, boundary_ks, transforms, resize=2048, s
 
     return train, val
 
-def build_test_dataloader(dataset, data_root, transforms):
-    if dataset == "urban3d":
-        return Urban3dDataset(os.path.join(data_root, "Urban3D/test"), boundary_kernel_size=None, transforms=transforms)
-    elif dataset == "spaceNet":
-        return SpaceNetDataset(os.path.join(data_root, "SpaceNet/Vegas/test"), None, transforms)
-    elif dataset == "crowdAI":
-        return CrowdAIDataset(os.path.join(data_root, "AICrowd/test"), None, transforms)
+def build_test_dataloader(args, transforms):
+    if args.dataset == "urban3d":
+        return Urban3dDataset(os.path.join(args.data_root, "Urban3D/test"), boundary_kernel_size=None, transforms=transforms)
+    elif args.dataset == "spaceNet":
+        return SpaceNetDataset(os.path.join(args.data_root, "SpaceNet/Vegas/test"), None, transforms)
+    elif args.dataset == "crowdAI":
+        return CrowdAIDataset(os.path.join(args.data_root, "AICrowd/test"), None, transforms)
+    elif args.dataset == "tile":
+        return TileInferenceDataset(args.input_fn, args.chip_size, args.chip_stride, transform=transforms, windowed_sampling=False, verbose=False)
     else:
         raise NotImplementedError()
