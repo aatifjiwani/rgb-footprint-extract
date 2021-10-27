@@ -75,7 +75,21 @@ To train with the cross-task training strategy, you need to:
 
 ### Pre-Trained Weights
 
-We provide pre-trained model weights in the `weights/` directory. Please use Git LFS to download these weights. These weights correspond to our best model on all three datasets. 
+We provide pre-trained model weights in the `weights/` directory. Please use Git LFS to download these weights. These weights correspond to our best model on all three datasets.
+
+First, download and install [Git LFS](https://git-lfs.github.com/) on your system. Then, run `git lfs pull` from the project directory.
+
+
+### Model Inference
+
+If you have a new RGB GeoTiff image, you can use the `inference.py` script to run a trained model on it and produce predictions.
+
+Assuming your input is named `input.tif`, you would like to save the results to `output.tif` and you have already downloaded the model weights using git lfs, you can use the following command to run one of the pretrained models:
+```
+python inference.py --input-fn input.tif --output-fn output.tif
+```
+
+NOTE: the `inference.py` script uses the model creation parameters that fit with the pretrained models available in this repo. If you train your own model then you will need to pass different parameters accordingly.
 
 ### Results
 

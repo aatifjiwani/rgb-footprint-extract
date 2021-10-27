@@ -17,7 +17,7 @@ def main():
     parser.add_argument('--out-stride', type=int, default=8, help='network output stride (default: 8)')
     parser.add_argument('--workers', type=int, default=4, metavar='N', help='dataloader threads')
     parser.add_argument('--sync-bn', type=bool, default=None, help='whether to use sync bn (default: auto)')
-    parser.add_argument('--freeze-bn', type=bool, default=False, help='whether to freeze bn parameters (default: False)')
+    parser.add_argument('--freeze-bn', action="store_true", help='whether to freeze bn parameters')
     parser.add_argument('--loss-type', type=str, default='ce_dice', choices=['ce', 'ce_dice', 'wce_dice'], help='loss func type (default: ce)')
     parser.add_argument("--num-classes", type=int, default=2, help='number of classes to predict (2 for binary mask)')
     parser.add_argument('--dropout', type=float, nargs="+", default=[0.1, 0.5], help='dropout values')
