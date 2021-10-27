@@ -42,6 +42,6 @@ def build_test_dataloader(args, transforms):
     elif args.dataset == "crowdAI":
         return CrowdAIDataset(os.path.join(args.data_root, "AICrowd/test"), None, transforms)
     elif args.dataset == "tile":
-        return TileInferenceDataset(args.inference_fn, args.inference_chip_size, args.inference_stride, transform=transforms, windowed_sampling=False, verbose=False)
+        return TileInferenceDataset(args.input_fn, args.chip_size, args.chip_stride, transform=transforms, windowed_sampling=False, verbose=False)
     else:
         raise NotImplementedError()

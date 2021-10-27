@@ -25,39 +25,39 @@ class Tester(object):
         # Define Saver
         self.saver = Saver(args)
         self.saver.save_experiment_config()
-        
+
         # Define transforms and Dataloader
-        deeplab_collate_fn = None
-        transform = None
+        if args.switch_r_and_b:
+            transform = lambda x: x[[2,1,0],:,:].copy()
+        else:
+            transform = lambda x: x[:3,:,:].copy()
         test_dataset = build_test_dataloader(args, transform)
 
         print("Testing on {} samples".format(len(test_dataset)))
         self.test_loader = DataLoader(
-                                    test_dataset, 
-                                    batch_size=args.test_batch_size, 
-                                    shuffle=True, 
-                                    num_workers=args.workers,
-                                    collate_fn=deeplab_collate_fn
-                                )
+            test_dataset,
+            batch_size=args.test_batch_size,
+            shuffle=False,
+            num_workers=args.workers,
+        )
         self.nclass = args.num_classes
 
         # Define network
         print("Using backbone {} with output stride {} and dropout values {}, {}".format(args.backbone, args.out_stride, args.dropout[0], args.dropout[1]))
-        self.model = DeepLab(num_classes=self.nclass,
-                        backbone=args.backbone,
-                        output_stride=args.out_stride,
-                        sync_bn=args.sync_bn,
-                        freeze_bn=args.freeze_bn,
-                        dropout_low=args.dropout[0],
-                        dropout_high=args.dropout[1],
-                    )
-
+        self.model = DeepLab(
+            num_classes=self.nclass,
+            backbone=args.backbone,
+            output_stride=args.out_stride,
+            sync_bn=args.sync_bn,
+            freeze_bn=args.freeze_bn,
+            dropout_low=args.dropout[0],
+            dropout_high=args.dropout[1],
+        )
 
         # Using cuda
         if args.cuda:
-            self.model = torch.nn.DataParallel(self.model, device_ids=self.args.gpu_ids)
-            if model_arg == "deeplab":
-                patch_replication_callback(self.model)
+            self.model = torch.nn.DataParallel(self.model, device_ids=args.gpu_ids)
+            patch_replication_callback(self.model)
             self.model = self.model.cuda()
 
         # Resume
@@ -65,7 +65,7 @@ class Tester(object):
         if args.best_miou:
             checkpoint_name = "best_miou_checkpoint.pth.tar"
 
-        checkpoint_path = os.path.join("weights", args.resume, checkpoint_name)
+        checkpoint_path = os.path.join(args.checkpoint_root, args.resume, checkpoint_name)
         print("Resuming from {}".format(checkpoint_path))
 
         model_checkpoint = torch.load(checkpoint_path)
@@ -75,7 +75,7 @@ class Tester(object):
         self.evaluator = Evaluator(self.nclass)
         self.curr_step = 0
 
-    def test(self, ):
+    def test(self):
         tbar = tqdm(self.test_loader)
 
         total_pixelAcc = []
@@ -94,7 +94,7 @@ class Tester(object):
 
             with torch.no_grad():
                 output = self.model(image)
-                     
+
             pred = torch.nn.functional.softmax(output, dim=1)
             pred = pred.data.cpu().numpy()
             pred = np.argmax(pred, axis=1)
@@ -115,14 +115,38 @@ class Tester(object):
                 total_recall.append(0)
 
         print({
-                "test_mIOU": np.mean(total_mIOU),
-                "test_pixel_acc": np.mean(total_pixelAcc),
-                "test_f1": np.mean(total_f1),
-                "test_ap": np.mean(total_precision),
-                "test_ar": np.mean(total_recall),
-            })
+            "test_mIOU": np.mean(total_mIOU),
+            "test_pixel_acc": np.mean(total_pixelAcc),
+            "test_f1": np.mean(total_f1),
+            "test_ap": np.mean(total_precision),
+            "test_ar": np.mean(total_recall),
+        })
 
+    def inference(self, input_width, input_height):
+        assert self.test_loader.dataset.__class__.__name__ == "TileInferenceDataset"
 
+        tbar = tqdm(self.test_loader)
 
+        output = np.zeros((2, input_height, input_width), dtype=np.float32)
+        kernel = np.ones((self.args.chip_size, self.args.chip_size), dtype=np.float32)
+        kernel[self.args.padding:-self.args.padding, self.args.padding:-self.args.padding] = 5
+        counts = np.zeros((input_height, input_width), dtype=np.float32)
 
+        for i, (data, coords) in enumerate(tbar):
+            if self.args.cuda:
+                data = data.cuda()
+
+            with torch.no_grad():
+                t_output = self.model(data)
+                t_output = torch.nn.functional.softmax(t_output, dim=1).cpu().numpy()
+
+            for j in range(t_output.shape[0]):
+                y, x =  coords[j]
+
+                output[:, y:y+self.args.chip_size, x:x+self.args.chip_size] += t_output[j] * kernel
+                counts[y:y+self.args.chip_size, x:x+self.args.chip_size] += kernel
+
+        output = output / counts
+        output_hard = output.argmax(axis=0).astype(np.uint8)
+        return output_hard
 
