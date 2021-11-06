@@ -22,7 +22,7 @@ class TileInferenceDataset(Dataset):
             chip_size: The size of chips to return (chips will be squares).
             stride: How much we move the sliding window to sample the next chip. If this is is less than `chip_size` then we will get overlapping windows, if it is > `chip_size` then some parts of the tile will not be sampled.
             transform: A torchvision Transform to apply on each chip.
-            windowed_sample: If `True` we will use rasterio.windows.Window to sample chips without every loading the entire file into memory, else, we will load the entire tile up-front and index into it to sample chips.
+            windowed_sample: If `True` we will use rasterio.windows.Window to sample chips without ever loading the entire file into memory, else, we will load the entire tile up-front and index into it to sample chips.
             verbose: Flag to control printing stuff.
         """
         self.fn = fn
