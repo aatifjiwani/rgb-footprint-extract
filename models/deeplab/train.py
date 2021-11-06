@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 from models.deeplab.modeling.sync_batchnorm.replicate import patch_replication_callback
 from models.deeplab.modeling.deeplab import *
 from models.utils.loss import SegmentationLosses
+from models.utils.loader import load_model
 from models.utils.saver import Saver
 from models.utils.metrics import Evaluator
 from models.utils.collate_fn import generate_split_collate_fn, handle_concatenation
@@ -81,24 +82,9 @@ class Trainer(object):
         self.model, self.optimizer = model, optimizer
 
         if args.use_wandb:
-            wandb.watch(model)
+            wandb.watch(self.model)
 
-        # Using cuda
-        if args.cuda:
-            self.model = torch.nn.DataParallel(self.model, device_ids=self.args.gpu_ids)
-            patch_replication_callback(self.model)
-            self.model = self.model.cuda()
-
-        if args.resume is not None:
-            checkpoint_name = "best_loss_checkpoint.pth.tar"
-            if args.best_miou:
-                checkpoint_name = "best_miou_checkpoint.pth.tar"
-
-            checkpoint_path = os.path.join("weights", args.resume, checkpoint_name)
-            print("Resuming from {}".format(checkpoint_path))
-
-            model_checkpoint = torch.load(checkpoint_path)
-            self.model.load_state_dict(model_checkpoint)
+        self.model = load_model(self.model, args.resume, args.best_miou, args.cuda, args.gpu_ids)
 
         self.evaluator = Evaluator(self.nclass)
         self.curr_step = 0
