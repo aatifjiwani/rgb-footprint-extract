@@ -88,9 +88,9 @@ def main():
                         help='kernel size for calculating boundary')
 
     args = parser.parse_args()
-    train_deeplab(args)
+    run_deeplab(args)
 
-def train_deeplab(args):
+def run_deeplab(args):
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     if args.cuda:
         try:
