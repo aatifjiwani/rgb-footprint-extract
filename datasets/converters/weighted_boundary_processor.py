@@ -117,4 +117,6 @@ if __name__ == "__main__":
         processor.process()
 
     """
-    pass
+    import sys
+    processor = Processor(sys.argv[1], 10, 7.5, 150)
+    processor.process()
