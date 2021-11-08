@@ -4,13 +4,12 @@ import torch.nn.functional as F
 import numpy as np
 
 class SegmentationLosses(object):
-    def __init__(self, beta=1, weight=None, cuda=False):
+    def __init__(self, beta=1, weight=None):
         self.weight = weight
         self.beta = beta
         assert self.weight is None or sum(self.weight) == 2 or sum(self.weight) == 3
         print("Using loss weights: ", self.weight)
 
-        self.cuda = cuda
         self.verbose = True
 
     def build_loss(self, mode='ce'):

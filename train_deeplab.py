@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 from models.deeplab.train import *
-from models.deeplab.evaluate import *
+# from models.deeplab.evaluate import *
 import argparse
 
 def main():
@@ -21,7 +21,7 @@ def main():
     parser.add_argument('--out-stride', type=int, default=16,
                         help='network output stride (default: 8)')
     parser.add_argument('--dataset', type=str, default='urban3d',
-                        choices=['urban3d', 'spaceNet', 'crowdAI', 'combined'],
+                        choices=['urban3d', 'spaceNet', 'crowdAI', 'cauGiay', 'combined'],
                         help='dataset name (default: urban3d)')
     parser.add_argument('--data-root', type=str, default='/data/',
                         help='datasets root path')
@@ -95,28 +95,9 @@ def main():
     run_deeplab(args)
 
 def run_deeplab(args):
-    args.cuda = not args.no_cuda and torch.cuda.is_available()
-    if args.cuda:
-        try:
-            args.gpu_ids = [int(s) for s in args.gpu_ids.split(',')]
-        except ValueError:
-            raise ValueError('Argument --gpu_ids must be a comma-separated list of integers only')
-
-    if args.sync_bn is None:
-        if args.cuda and len(args.gpu_ids) > 1:
-            args.sync_bn = True
-        else:
-            args.sync_bn = False
-
     # default settings for epochs, batch_size and lr
     if args.epochs is None:
         raise ValueError("epochs must be specified")
-
-    if args.batch_size is None:
-        args.batch_size = 4 * len(args.gpu_ids)
-
-    if args.test_batch_size is None:
-        args.test_batch_size = args.batch_size
 
     if args.checkname is None:
         args.checkname = 'deeplab-'+str(args.backbone)
@@ -128,10 +109,11 @@ def run_deeplab(args):
         handle_training(args)
 
 def handle_evaluate(args):
-    tester = Tester(args)
-    print("Experiment {} instantiated. Training starting...".format(args.checkname))
+    # tester = Tester(args)
+    # print("Experiment {} instantiated. Training starting...".format(args.checkname))
 
-    tester.test()
+    # tester.test()
+    pass
 
 def handle_training(args):
     print("Learning rate: {}; L2 factor: {}".format(args.lr, args.weight_decay))

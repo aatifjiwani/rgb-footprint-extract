@@ -19,6 +19,7 @@ from datasets import build_dataloader
 class DeepLabModule(pl.LightningModule):
     def __init__(self,
                  args):
+        super().__init__()
         self.save_hyperparameters()
 
         # setup params
@@ -53,8 +54,8 @@ class DeepLabModule(pl.LightningModule):
             assert args.loss_type in ["wce_dice"]
 
         self.criterion = SegmentationLosses(beta=args.fbeta,
-                                            weight=args.loss_weights,
-                                            cuda=args.cuda).build_loss(mode=args.loss_type)
+                                            weight=args.loss_weights
+                                            ).build_loss(mode=args.loss_type)
 
         self.evaluator = Evaluator(self.nclass)
 
