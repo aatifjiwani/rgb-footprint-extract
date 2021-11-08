@@ -66,7 +66,7 @@ def main():
     # cuda, seed and logging
     parser.add_argument('--no-cuda', action='store_true', default=
                         False, help='disables CUDA training')
-    parser.add_argument('--gpu-ids', type=str, default='0',
+    parser.add_argument('--gpu-ids', default=1, type=int,
                         help='use which gpu to train, must be a \
                         comma-separated list of integers only (default=0)')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
@@ -135,7 +135,7 @@ def handle_evaluate(args):
 def handle_training(args):
     print("Learning rate: {}; L2 factor: {}".format(args.lr, args.weight_decay))
     print("Experiment {} instantiated. Training starting...".format(args.checkname))
-    print("Training for {} epochs".format(trainer.args.epochs))
+    print("Training for {} epochs".format(args.epochs))
     print("Batch size: {}; Test Batch Size: {}".format(args.batch_size, args.test_batch_size))
     
     dm = DeepLabDataModule(args)
@@ -163,7 +163,7 @@ def handle_training(args):
     )
 
     trainer = pl.Trainer(callbacks=[checkpoint_callback],
-                         gpus=args.gpu,
+                         gpus=args.gpu_ids,
                          max_epochs=args.epochs,
                          val_check_interval=5)
     trainer.fit(model, dm)
