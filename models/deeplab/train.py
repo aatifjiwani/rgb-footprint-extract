@@ -1,64 +1,39 @@
-# We would like to thank and acknowledge jfzhang95 for the DeepLabV3+ module 
-# as well as a template for metrics and the training pipeline. 
+# We would like to thank and acknowledge jfzhang95 for the DeepLabV3+ module
+# as well as a template for metrics and the training pipeline.
 # His code repository can be found here:
 # https://github.com/jfzhang95/pytorch-deeplab-xception
 
 import os
-import time
-import wandb
 import numpy as np
-from tqdm import tqdm
 
+import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
-from models.deeplab.modeling.sync_batchnorm.replicate import patch_replication_callback
 from models.deeplab.modeling.deeplab import *
 from models.utils.loss import SegmentationLosses
-from models.utils.saver import Saver
 from models.utils.metrics import Evaluator
-from models.utils.collate_fn import generate_split_collate_fn, handle_concatenation
-from models.utils.custom_transforms import tensor_resize
 
 from datasets import build_dataloader
 
-class Trainer(object):
-    def __init__(self, args):
-        self.args = args
 
-        # Define Saver
-        self.saver = Saver(args)
-        self.saver.save_experiment_config()
-        
-        # Define transforms and Dataloader
-        boundary_ks = args.bounds_kernel_size if args.incl_bounds else None
-        deeplab_collate_fn = None
-        transform = None
-        
-        resize = 2048
-        split = 2
-        train_dataset, val_dataset = build_dataloader(args.dataset, args.data_root, boundary_ks, transform, resize, split)
+class DeepLabModule(pl.LightningModule):
+    def __init__(self,
+                 args):
+        self.save_hyperparameters()
 
-        print("Training on {} samples, Validating on {} samples".format(len(train_dataset), len(val_dataset)))
-        self.validation_loader = DataLoader(
-                                    val_dataset, 
-                                    batch_size=args.test_batch_size, 
-                                    shuffle=True, 
-                                    num_workers=args.workers,
-                                    collate_fn=deeplab_collate_fn
-                                )
-        self.train_loader = DataLoader(
-                                train_dataset, 
-                                batch_size=args.batch_size, 
-                                shuffle=True, 
-                                num_workers=args.workers,
-                                collate_fn=deeplab_collate_fn    
-                            )
-
+        # setup params
+        self.dataset = args.dataset
+        self.incl_bounds = args.incl_bounds
         self.nclass = args.num_classes
+        self.momentum=args.momentum
+        self.weight_decay=args.weight_decay
+        self.nesterov=args.nesterov
+        self.lr = args.lr
 
-        # Define network
-        print("Using backbone {} with output stride {} and dropout values {}, {}".format(args.backbone, args.out_stride, args.dropout[0], args.dropout[1]))
-        model = DeepLab(num_classes=self.nclass,
+        # setup model
+        print("Using backbone {} with output stride {} and dropout values {}, {}"
+                .format(args.backbone, args.out_stride, args.dropout[0], args.dropout[1]))
+        self.model = DeepLab(num_classes=self.nclass,
                         backbone=args.backbone,
                         output_stride=args.out_stride,
                         sync_bn=args.sync_bn,
@@ -67,163 +42,142 @@ class Trainer(object):
                         dropout_high=args.dropout[1],
                     )
 
-        train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},
-                        {'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
-
-        # Define Optimizer
-        optimizer = torch.optim.SGD(train_params, momentum=args.momentum,
-                                    weight_decay=args.weight_decay, nesterov=args.nesterov)
-
-        if args.incl_bounds:
+        # setup criterion
+        if self.incl_bounds:
             assert args.loss_type in ["wce_dice"]
 
-        self.criterion = SegmentationLosses(beta=args.fbeta, weight=args.loss_weights, cuda=args.cuda).build_loss(mode=args.loss_type)
-        self.model, self.optimizer = model, optimizer
-
-        if args.use_wandb:
-            wandb.watch(model)
-
-        # Using cuda
-        if args.cuda:
-            self.model = torch.nn.DataParallel(self.model, device_ids=self.args.gpu_ids)
-            patch_replication_callback(self.model)
-            self.model = self.model.cuda()
-
-        if args.resume is not None:
-            checkpoint_name = "best_loss_checkpoint.pth.tar"
-            if args.best_miou:
-                checkpoint_name = "best_miou_checkpoint.pth.tar"
-
-            checkpoint_path = os.path.join("weights", args.resume, checkpoint_name)
-            print("Resuming from {}".format(checkpoint_path))
-
-            model_checkpoint = torch.load(checkpoint_path)
-            self.model.load_state_dict(model_checkpoint)
+        self.criterion = SegmentationLosses(beta=args.fbeta,
+                                            weight=args.loss_weights,
+                                            cuda=args.cuda).build_loss(mode=args.loss_type)
 
         self.evaluator = Evaluator(self.nclass)
-        self.curr_step = 0
 
-    def training(self, epoch):
-        start_time = time.time()
+    def configure_optimizers(self):
+        train_params = [
+            {'params': self.model.get_1x_lr_params(), 'lr': self.lr},
+            {'params': self.model.get_10x_lr_params(), 'lr': self.lr * 10}
+        ]
 
-        self.model.train()
-        tbar = tqdm(self.train_loader)
+        optimizer = torch.optim.SGD(train_params,
+                                    momentum=self.momentum,
+                                    weight_decay=self.weight_decay,
+                                    nesterov=self.nesterov)
 
-        print("Curr Learning Rate x1: {}; Learning Rate x10: {}".format(self.optimizer.param_groups[0]['lr'], self.optimizer.param_groups[1]['lr']))
+        return optimizer
 
-        for i, sample in enumerate(tbar):
-            image, mask = sample['image'], sample['mask'].long()
+    def forward(self, x):
+        output = self.model(x)
+        return output
 
-            # cuda enable image/mask
-            if self.args.cuda:
-                image, mask = image.cuda(), mask.cuda()
+    def _step(self, image, mask):
+        output = self(image)
 
-            # need to squeeze if combined dataset
-            if self.args.dataset == "combined":
-                image, mask = image.squeeze(), mask.squeeze()
- 
-            # get output, calculate loss, perform backprop
-            self.optimizer.zero_grad()
-            output = self.model(image)
+        if self.incl_bounds:
+            boundary_weights = image['boundary']
+            loss = self.criterion(output, mask, boundary_weights)
+        else:
+            loss = self.criterion(output, mask)
 
-            if self.args.incl_bounds:
-                boundary_weights = sample['boundary'].to(image.device)
-                loss = self.criterion(output, mask, boundary_weights)
-            else:
-                loss = self.criterion(output, mask)
+        return output, loss
 
-            loss.backward()
-            self.optimizer.step()
-            
-            train_loss = loss.item()
+    def training_step(self, batch, batch_idx):
+        image, mask = batch['image'], batch['mask'].long()
+        # need to squeeze if combined dataset
+        if self.dataset == "combined":
+            image, mask = image.squeeze(), mask.squeeze()
 
-            with torch.no_grad():
-                pred = torch.nn.functional.softmax(output, dim=1)
-                pred = pred.data.cpu().numpy()
-                pred = np.argmax(pred, axis=1)
+        _, loss = self._step(image, mask)
+        self.log('train_loss', loss, on_step=False, on_epoch=True)
+        return {"loss": loss}
 
-                target = mask.cpu().numpy()
+    def validation_step(self, batch, batch_idx):
+        image, mask = batch['image'], batch['mask'].long()
+        # need to squeeze if combined dataset
+        if self.dataset == "combined":
+            image, mask = image.squeeze(), mask.squeeze()
 
-                pixel_acc = self.evaluator.pixelAcc_manual(target, pred)
-                mIOU = self.evaluator.mIOU_manual(target, pred)
-                f1_score = self.evaluator.f1score_manual(target, pred)
+        output, loss = self._step(image, mask)
 
-            tbar.set_description('Train loss: %.3f' % (train_loss))
-            metrics = {"train_loss": train_loss, "mIOU": mIOU, "pixel_acc": pixel_acc}
-            metrics["f1"] = f1_score if f1_score is not None else 0
+        pred = torch.nn.functional.softmax(output, dim=1)
+        pred = pred.data.cpu().numpy()
+        pred = np.argmax(pred, axis=1)
 
-            self.saver.log_wandb(epoch, self.curr_step, metrics)
-            self.curr_step += 1
+        target = mask.cpu().numpy()
 
-        total_time = time.time() - start_time
-        self.saver.log_wandb(None, self.curr_step, {"time" : total_time})
-        
-    def validation(self, epoch):
-        self.model.eval()
-        tbar = tqdm(self.validation_loader)
-        tbar.set_description("[Epoch {}] Validation".format(epoch))
+        pixel_acc = self.evaluator.pixelAcc_manual(target, pred)
+        mIOU = self.evaluator.mIOU_manual(target, pred)
+        f1_score = self.evaluator.f1score_manual(target, pred)
 
+        return loss, pixel_acc, mIOU, f1_score
+
+    def validation_epoch_end(self, outs):
         total_loss = []
         total_pixelAcc = []
         total_mIOU = []
         total_f1 = []
-
-        for i, sample in enumerate(tbar):
-            image, mask = sample['image'], sample['mask'].long()
-            names = sample['name']
-
-            # cuda enable image/mask
-            if self.args.cuda:
-                image, mask = image.cuda(), mask.cuda()
-
-            # need to squeeze if combined dataset
-            if self.args.dataset == "combined":
-                image, mask = image.squeeze(), mask.squeeze()
-
-            with torch.no_grad():
-                output = self.model(image)
-
-            if self.args.incl_bounds:
-                boundary_weights = sample['boundary'].to(image.device)
-
-                loss = self.criterion(output, mask, boundary_weights)
-            else:
-                loss = self.criterion(output, mask)      
-                     
+        for (loss, pixel_acc, mIOU, f1) in outs:
             total_loss.append(loss.item())
-
-            pred = torch.nn.functional.softmax(output, dim=1)
-            pred = pred.data.cpu().numpy()
-            pred = np.argmax(pred, axis=1)
-
-            target = mask.cpu().numpy()
-
-            total_pixelAcc.append(self.evaluator.pixelAcc_manual(target, pred))
-            total_mIOU.append(self.evaluator.mIOU_manual(target, pred))
-            f1 = self.evaluator.f1score_manual(target, pred)
+            total_pixelAcc.append(pixel_acc)
+            total_mIOU.append(mIOU)
             if f1 is not None:
                 total_f1.append(f1)
             else:
                 total_f1.append(0)
 
-                
-        self.saver.log_wandb(epoch, self.curr_step, {
-                                                        "val_loss": np.mean(total_loss),
-                                                        "val_mIOU": np.mean(total_mIOU),
-                                                        "val_pixel_acc": np.mean(total_pixelAcc),
-                                                        "val_f1": np.mean(total_f1),
-                                                    })
-        self.saver.save_checkpoint(self.model.state_dict(), np.mean(total_loss), np.mean(total_mIOU))
+        self.log('val_loss', np.mean(total_loss))
+        self.log('val_pixel_acc', np.mean(total_mIOU))
+        self.log('val_mIOU', np.mean(total_pixelAcc))
+        self.log('val_f1_score', np.mean(total_f1))
 
-        # select random image and log it to WandB
-        filename, image, pred, target = handle_concatenation(
-                                                            self.args.dataset == "combined",
-                                                            self.args.split,
-                                                            image,
-                                                            pred,
-                                                            target,
-                                                            names
-                                                        )
 
-        self.saver.log_wandb_image(filename, image, pred, target)
-        self.curr_step += 1
+class DeepLabDataModule(pl.LightningDataModule):
+    def __init__(self,
+                 args
+                 ):
+        super().__init__()
+
+        self.dataset = args.dataset
+        self.data_root = args.data_root
+        self.batch_size = args.batch_size
+        self.test_batch_size = args.test_batch_size
+        self.workers = args.workers
+
+        # Define transforms and Dataloader
+        self.boundary_ks = args.bounds_kernel_size if args.incl_bounds else None
+        self.deeplab_collate_fn = None
+        self.transform = None
+
+    def prepare_data(self):
+        # called only on 1 GPU
+        pass
+
+    def setup(self,
+              stage: str = "fit"):
+        resize = 2048
+
+        if stage == "fit" or stage is None:
+            split = 2
+            self.train_dataset, self.val_dataset = build_dataloader(self.dataset,
+                                                                    self.data_root,
+                                                                    self.boundary_ks,
+                                                                    self.transform,
+                                                                    resize,
+                                                                    split)
+
+    def train_dataloader(self):
+        return DataLoader(
+                self.train_dataset,
+                batch_size=self.batch_size,
+                shuffle=True,
+                num_workers=self.workers,
+                collate_fn=self.deeplab_collate_fn
+            )
+
+    def val_dataloader(self):
+        return DataLoader(
+                self.val_dataset,
+                batch_size=self.test_batch_size,
+                shuffle=False,
+                num_workers=self.workers,
+                collate_fn=self.deeplab_collate_fn
+            )

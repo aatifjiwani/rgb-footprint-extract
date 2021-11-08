@@ -3,6 +3,9 @@
 # His code repository can be found here:
 # https://github.com/jfzhang95/pytorch-deeplab-xception
 
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import ModelCheckpoint
+
 from models.deeplab.train import *
 from models.deeplab.evaluate import *
 import argparse
@@ -88,9 +91,9 @@ def main():
                         help='kernel size for calculating boundary')
 
     args = parser.parse_args()
-    train_deeplab(args)
+    run_deeplab(args)
 
-def train_deeplab(args):
+def run_deeplab(args):
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     if args.cuda:
         try:
@@ -130,16 +133,41 @@ def handle_evaluate(args):
     tester.test()
 
 def handle_training(args):
-    trainer = Trainer(args)
-
     print("Learning rate: {}; L2 factor: {}".format(args.lr, args.weight_decay))
     print("Experiment {} instantiated. Training starting...".format(args.checkname))
     print("Training for {} epochs".format(trainer.args.epochs))
     print("Batch size: {}; Test Batch Size: {}".format(args.batch_size, args.test_batch_size))
-    for epoch in range(trainer.args.start_epoch, trainer.args.epochs):
-        trainer.training(epoch)
-        if not trainer.args.no_val:
-            trainer.validation(epoch)
+    
+    dm = DeepLabDataModule(args)
+    dm.setup("fit")
+
+    if args.resume is not None:
+        checkpoint_name = "best_loss_checkpoint.pth.tar"
+        if args.best_miou:
+            checkpoint_name = "best_miou_checkpoint.pth.tar"
+        checkpoint_path = os.path.join("weights", args.resume, checkpoint_name)
+        print("Resuming from {}".format(checkpoint_path))
+
+        model = DeepLabModule.load_from_checkpoint(checkpoint_path)
+    else:
+        model = DeepLabModule(args)
+    
+    # define callbacks
+    checkpoint_callback = ModelCheckpoint(
+        monitor="val_loss",
+        dirpath=os.path.join('weights', args.checkname),
+        filename="{epoch:02d}-{train_loss:.2f}-{val_loss:.2f}",
+        save_top_k=3,
+        mode="min",
+        save_on_train_epoch_end=True
+    )
+
+    trainer = pl.Trainer(callbacks=[checkpoint_callback],
+                         gpus=args.gpu,
+                         max_epochs=args.epochs,
+                         val_check_interval=5)
+    trainer.fit(model, dm)
+
 
 if __name__ == "__main__":
     main()
