@@ -81,6 +81,7 @@ def main():
     parser.add_argument('--use-wandb', action='store_true', default=False)
 
     parser.add_argument('--resume', type=str, default=None, help='experiment to load')
+    parser.add_argument('--pretrained', type=str, default=None, help='path to pretrained model')
     parser.add_argument("--evaluate", action='store_true', default=False)
     parser.add_argument('--best-miou', action='store_true', default=False)
 
@@ -153,19 +154,28 @@ def handle_training(args):
         model = DeepLabModule(args)
     
     # define callbacks
-    checkpoint_callback = ModelCheckpoint(
+    best_loss_checkpoint_callback = ModelCheckpoint(
         monitor="val_loss",
         dirpath=os.path.join('weights', args.checkname),
-        filename="{epoch:02d}-{train_loss:.2f}-{val_loss:.2f}",
+        filename="best_loss_{epoch:02d}_{train_loss:.2f}_{val_loss:.2f}",
         save_top_k=3,
         mode="min",
         save_on_train_epoch_end=True
     )
 
-    trainer = pl.Trainer(callbacks=[checkpoint_callback],
+    best_miou_checkpoint_callback = ModelCheckpoint(
+        monitor="val_miou",
+        dirpath=os.path.join('weights', args.checkname),
+        filename="best_miou_{epoch:02d}_{train_loss:.2f}_{val_miou:.2f}",
+        save_top_k=3,
+        mode="max",
+        save_on_train_epoch_end=True
+    )
+
+    trainer = pl.Trainer(callbacks=[best_loss_checkpoint_callback, best_miou_checkpoint_callback],
                          gpus=args.gpu_ids,
                          max_epochs=args.epochs,
-                         val_check_interval=5)
+                         val_check_interval=1)
     trainer.fit(model, dm)
 
 

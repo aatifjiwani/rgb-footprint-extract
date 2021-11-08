@@ -33,6 +33,7 @@ class DeepLabModule(pl.LightningModule):
         # setup model
         print("Using backbone {} with output stride {} and dropout values {}, {}"
                 .format(args.backbone, args.out_stride, args.dropout[0], args.dropout[1]))
+        
         self.model = DeepLab(num_classes=self.nclass,
                         backbone=args.backbone,
                         output_stride=args.out_stride,
@@ -41,6 +42,11 @@ class DeepLabModule(pl.LightningModule):
                         dropout_low=args.dropout[0],
                         dropout_high=args.dropout[1],
                     )
+
+        if args.pretrained is not None:
+            print("Loading pretrained model from {}".format(args.pretrained))
+            model_checkpoint = torch.load(args.pretrained)
+            self.model.load_state_dict(model_checkpoint)
 
         # setup criterion
         if self.incl_bounds:
@@ -105,20 +111,20 @@ class DeepLabModule(pl.LightningModule):
         target = mask.cpu().numpy()
 
         pixel_acc = self.evaluator.pixelAcc_manual(target, pred)
-        mIOU = self.evaluator.mIOU_manual(target, pred)
+        val_miou = self.evaluator.mIOU_manual(target, pred)
         f1_score = self.evaluator.f1score_manual(target, pred)
 
-        return loss, pixel_acc, mIOU, f1_score
+        return loss, pixel_acc, val_miou, f1_score
 
     def validation_epoch_end(self, outs):
         total_loss = []
         total_pixelAcc = []
         total_mIOU = []
         total_f1 = []
-        for (loss, pixel_acc, mIOU, f1) in outs:
+        for (loss, pixel_acc, val_miou, f1) in outs:
             total_loss.append(loss.item())
             total_pixelAcc.append(pixel_acc)
-            total_mIOU.append(mIOU)
+            total_mIOU.append(val_miou)
             if f1 is not None:
                 total_f1.append(f1)
             else:
@@ -126,7 +132,7 @@ class DeepLabModule(pl.LightningModule):
 
         self.log('val_loss', np.mean(total_loss))
         self.log('val_pixel_acc', np.mean(total_mIOU))
-        self.log('val_mIOU', np.mean(total_pixelAcc))
+        self.log('val_miou', np.mean(total_pixelAcc))
         self.log('val_f1_score', np.mean(total_f1))
 
 
