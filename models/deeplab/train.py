@@ -76,11 +76,10 @@ class DeepLabModule(pl.LightningModule):
         output = self.model(x)
         return output
 
-    def _step(self, image, mask):
+    def _step(self, image, mask, boundary_weights):
         output = self(image)
 
-        if self.incl_bounds:
-            boundary_weights = image['boundary']
+        if boundary_weights is not None:
             loss = self.criterion(output, mask, boundary_weights)
         else:
             loss = self.criterion(output, mask)
@@ -89,11 +88,16 @@ class DeepLabModule(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         image, mask = batch['image'], batch['mask'].long()
+        if self.incl_bounds:
+            boundary_weights = image['boundary']
+        else:
+            boundary_weights = None
+
         # need to squeeze if combined dataset
         if self.dataset == "combined":
             image, mask = image.squeeze(), mask.squeeze()
 
-        _, loss = self._step(image, mask)
+        _, loss = self._step(image, mask, boundary_weights)
         self.log('train_loss', loss, on_step=False, on_epoch=True)
         return {"loss": loss}
 
