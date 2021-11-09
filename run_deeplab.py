@@ -118,7 +118,7 @@ def handle_inference(args):
         os.makedirs(args.output_dir)
 
     dm = DeepLabDataModule(args)
-    dm.setup("inference")
+    dm.setup("predict")
 
     model = DeepLabModule.load_from_checkpoint(args.model_path)
 

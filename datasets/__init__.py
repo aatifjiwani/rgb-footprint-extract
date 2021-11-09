@@ -54,10 +54,10 @@ def build_test_dataloader(dataset, data_root, transforms):
         return SpaceNetDataset(os.path.join(data_root, "SpaceNet/Vegas/test"), None, transforms)
     elif dataset == "cauGiay":
         dataset = CauGiayDataset(
-                    os.path.join(data_root, "CauGiay", "inference"), 
+                    os.path.join(data_root, "CauGiay", "pred"), 
                     None, 
                     transforms,
-                    stage="inference")
+                    stage="pred")
     elif dataset == "crowdAI":
         return CrowdAIDataset(os.path.join(data_root, "AICrowd/test"), None, transforms)
     else:
@@ -100,10 +100,10 @@ class DeepLabDataModule(pl.LightningDataModule):
                                                                     resize,
                                                                     split)
         
-        if stage == "inference" or stage is None:
-            self.inference_dataset = build_test_dataloader(self.dataset,
-                                                           self.data_root,
-                                                           self.transform)
+        if stage == "predict" or stage is None:
+            self.predict_dataset = build_test_dataloader(self.dataset,
+                                                         self.data_root,
+                                                         self.transform)
 
     def train_dataloader(self):
         if self.train_dataset is not None:
@@ -126,9 +126,9 @@ class DeepLabDataModule(pl.LightningDataModule):
                 )
     
     def predict_dataloader(self):
-        if self.inference_dataset is not None:
+        if self.predict_dataset is not None:
             return DataLoader(
-                    self.inference_dataset,
+                    self.predict_dataset,
                     batch_size=self.test_batch_size,
                     shuffle=False,
                     num_workers=self.workers,

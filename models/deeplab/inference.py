@@ -23,9 +23,8 @@ class SemanticSegmentationTask(pl.LightningModule):
         images, names = batch['image'], batch['name']
         output = self.model(images)
         preds = torch.nn.functional.softmax(output, dim=1)
-        preds = np.argmax(preds, axis=1)
+        preds = torch.argmax(preds, axis=1)
         preds = preds.data.cpu().numpy()
 
-        names = names.data.cpu().numpy()
         for pred, name in zip(preds, names):
-            np.save(os.path.join(self.output_dir, name), pred)
+            np.savez_compressed(os.path.join(self.output_dir, name), pred.astype(np.uint8))
