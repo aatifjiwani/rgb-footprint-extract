@@ -49,6 +49,7 @@ def build_test_dataloader(dataset, data_root, transforms):
     else:
         raise NotImplementedError()
 
+
 class DeepLabDataModule(pl.LightningDataModule):
     def __init__(self,
                  args
