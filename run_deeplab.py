@@ -155,7 +155,7 @@ def handle_training(args):
     checkpoint_callback = ModelCheckpoint(
         monitor="val_loss",
         dirpath=os.path.join('weights', args.checkname),
-        filename="best_loss_{epoch:02d}_{train_loss:.2f}_{val_loss:.2f}",
+        filename="best_loss-{epoch:02d}-{train_loss:.2f}-{val_loss:.2f}",
         save_top_k=3,
         mode="min",
         save_on_train_epoch_end=True
@@ -176,7 +176,8 @@ def handle_training(args):
                          max_epochs=args.epochs,
                          val_check_interval=1.0)
     if args.resume is not None:
-        trainer.fit(model, dm, ckpt_path=args.resume)
+        ckpt_path = os.path.join('weights', args.checkname, args.resume)
+        trainer.fit(model, dm, ckpt_path=ckpt_path)
     else:
         trainer.fit(model, dm)
 

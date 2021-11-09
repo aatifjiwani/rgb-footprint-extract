@@ -14,4 +14,5 @@ python run_deeplab.py^
  --loss-weights 0.5 0.5^
  --dropout 0.3 0.5^
  --checkname=_caugiay_deeplab_drn_c42_ce_dice_f0.5^
+ --resume=best_loss_epoch=08_train_loss=0.41_val_loss=0.37.ckpt^
  --data-root=data\
