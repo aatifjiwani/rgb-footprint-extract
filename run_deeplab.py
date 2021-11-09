@@ -171,15 +171,19 @@ def handle_training(args):
 
     # use float (e.g 1.0) to set val frequency in epoch
     # if val_check_interval is integer, val frequency is in batch step
-    trainer = pl.Trainer(callbacks=callbacks,
-                         gpus=args.gpu_ids,
-                         max_epochs=args.epochs,
-                         val_check_interval=1.0)
+    
+    training_params = {
+        "callbacks": callbacks,
+        "gpus": args.gpu_ids,
+        "val_check_interval": 1.0,
+        "max_epochs": args.epochs
+    }
     if args.resume is not None:
         ckpt_path = os.path.join('weights', args.checkname, args.resume)
-        trainer.fit(model, dm, ckpt_path=ckpt_path)
-    else:
-        trainer.fit(model, dm)
+        training_params["resume_from_checkpoint"] = ckpt_path
+    
+    trainer = pl.Trainer(**training_params)
+    trainer.fit(model, dm)
 
 
 if __name__ == "__main__":
