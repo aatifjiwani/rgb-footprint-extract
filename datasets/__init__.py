@@ -1,10 +1,12 @@
+import os
+import pytorch_lightning as pl
+from torch.utils.data import DataLoader
+
 from .CrowdAIDataset import CrowdAIDataset
 from .Urban3dDataset import Urban3dDataset
 from .SpaceNetDataset import SpaceNetDataset
 from .CombinedDataset import CombinedDataset
 from .CauGiayDataset import CauGiayDataset
-import os
-
 
 def build_dataloader(dataset, data_root, boundary_ks, transforms, resize=2048, split=2):
     if dataset == "urban3d":
@@ -46,3 +48,70 @@ def build_test_dataloader(dataset, data_root, transforms):
         return CrowdAIDataset(os.path.join(data_root, "AICrowd/test"), None, transforms)
     else:
         raise NotImplementedError()
+
+class DeepLabDataModule(pl.LightningDataModule):
+    def __init__(self,
+                 args
+                 ):
+        super().__init__()
+
+        self.dataset = args.dataset
+        self.data_root = args.data_root
+        self.batch_size = args.batch_size
+        self.test_batch_size = args.test_batch_size
+        self.workers = args.workers
+
+        # Define transforms and Dataloader
+        self.boundary_ks = args.bounds_kernel_size if args.incl_bounds else None
+        self.deeplab_collate_fn = None
+        self.transform = None
+
+    def prepare_data(self):
+        # called only on 1 GPU
+        pass
+
+    def setup(self,
+              stage: str = "fit"):
+        resize = 2048
+
+        if stage == "fit" or stage is None:
+            split = 2
+            self.train_dataset, self.val_dataset = build_dataloader(self.dataset,
+                                                                    self.data_root,
+                                                                    self.boundary_ks,
+                                                                    self.transform,
+                                                                    resize,
+                                                                    split)
+        
+        if stage == "inference" or stage is None:
+            self.inference_dataset = None
+
+    def train_dataloader(self):
+        if self.train_dataset is not None:
+            return DataLoader(
+                    self.train_dataset,
+                    batch_size=self.batch_size,
+                    shuffle=True,
+                    num_workers=self.workers,
+                    collate_fn=self.deeplab_collate_fn
+                )
+
+    def val_dataloader(self):
+        if self.val_dataset is not None:
+            return DataLoader(
+                    self.val_dataset,
+                    batch_size=self.test_batch_size,
+                    shuffle=False,
+                    num_workers=self.workers,
+                    collate_fn=self.deeplab_collate_fn
+                )
+    
+    def predict_dataloader(self):
+        if self.inference_dataset is not None:
+            return DataLoader(
+                    self.inference_dataset,
+                    batch_size=self.test_batch_size,
+                    shuffle=False,
+                    num_workers=self.workers,
+                    collate_fn=self.deeplab_collate_fn
+                )

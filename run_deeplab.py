@@ -3,12 +3,14 @@
 # His code repository can be found here:
 # https://github.com/jfzhang95/pytorch-deeplab-xception
 
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+import os
 
-from models.deeplab.train import *
-# from models.deeplab.evaluate import *
+import torch
+import pytorch_lightning as pl
+
+from models.deeplab.train import DeepLabModule
+from datasets import DeepLabDataModule
+
 import argparse
 
 
@@ -80,8 +82,8 @@ def _parse_args():
     parser.add_argument('--no-val', action='store_true', default=False,
                         help='skip validation during training')
 
-    parser.add_argument('--resume', type=str, default=None, help='experiment to load')
-    parser.add_argument("--evaluate", action='store_true', default=False)
+    parser.add_argument("--inference", action='store_true', default=False)
+    parser.add_argument('--model-path', type=str, default=None, help='experiment to load')
     parser.add_argument('--best-miou', action='store_true', default=False)
 
     #boundaries
@@ -93,11 +95,37 @@ def _parse_args():
     args = parser.parse_args()
     return args
 
+
 def main():
     args = _parse_args()
     run_deeplab(args)
 
+
 def run_deeplab(args):
+    if args.inference:
+        handle_inference(args)
+    else:
+        handle_training(args)
+
+
+def handle_inference(args):
+    assert args.model_path is not None
+
+    dm = DeepLabDataModule(args)
+    dm.setup("inference")
+
+    model = DeepLabModule.load_from_checkpoint(args.model_path)
+
+    from models.deeplab.evaluate import SemanticSegmentationTask
+    task = SemanticSegmentationTask(model)
+
+    trainer = pl.Trainer(gpus=args.gpu_ids)
+    predictions = trainer.predict(task, datamodule=dm)
+    predictions = torch.stack(predictions)
+    predictions = predictions.cpu().detach().numpy()
+
+
+def handle_training(args):
     # default settings for epochs, batch_size and lr
     if args.epochs is None:
         raise ValueError("epochs must be specified")
@@ -105,36 +133,18 @@ def run_deeplab(args):
     if args.checkname is None:
         args.checkname = 'deeplab-'+str(args.backbone)
 
-    torch.manual_seed(args.seed)
-    if args.evaluate:
-        handle_evaluate(args)
-    else:
-        handle_training(args)
-
-def handle_evaluate(args):
-    # tester = Tester(args)
-    # print("Experiment {} instantiated. Training starting...".format(args.checkname))
-
-    # tester.test()
-    pass
-
-def handle_training(args):
     print("Learning rate: {}; L2 factor: {}".format(args.lr, args.weight_decay))
     print("Experiment {} instantiated. Training starting...".format(args.checkname))
     print("Training for {} epochs".format(args.epochs))
     print("Batch size: {}; Test Batch Size: {}".format(args.batch_size, args.test_batch_size))
+    torch.manual_seed(args.seed)
     
     dm = DeepLabDataModule(args)
     dm.setup("fit")
 
-    if args.resume is not None:
-        checkpoint_name = "best_loss_checkpoint.pth.tar"
-        if args.best_miou:
-            checkpoint_name = "best_miou_checkpoint.pth.tar"
-        checkpoint_path = os.path.join("weights", args.resume, checkpoint_name)
-        print("Resuming from {}".format(checkpoint_path))
-
-        model = DeepLabModule.load_from_checkpoint(checkpoint_path)
+    if args.model_path is not None:
+        print("Resuming from {}".format(args.model_path))
+        model = DeepLabModule.load_from_checkpoint(args.model_path)
     else:
         model = DeepLabModule(args)
     
@@ -142,6 +152,9 @@ def handle_training(args):
     # summary(model, (3, 650, 650), device="cpu")
 
     # define callbacks
+    from pytorch_lightning.callbacks import ModelCheckpoint
+    from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+    
     checkpoint_callback = ModelCheckpoint(
         monitor="val_loss",
         dirpath=os.path.join('weights', args.checkname),
@@ -157,9 +170,11 @@ def handle_training(args):
                                         verbose=False, 
                                         mode="min")
 
+    callbacks=[checkpoint_callback]
+
     # use float (e.g 1.0) to set val frequency in epoch
     # if val_check_interval is integer, val frequency is in batch step
-    trainer = pl.Trainer(callbacks=[checkpoint_callback],
+    trainer = pl.Trainer(callbacks=callbacks,
                          gpus=args.gpu_ids,
                          max_epochs=args.epochs,
                          val_check_interval=1.0)

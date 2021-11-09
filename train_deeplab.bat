@@ -1,4 +1,4 @@
-python train_deeplab.py^
+python run_deeplab.py^
  --backbone=drn_c42^
  --out-stride=8^
  --dataset=cauGiay^

@@ -3,17 +3,14 @@
 # His code repository can be found here:
 # https://github.com/jfzhang95/pytorch-deeplab-xception
 
-import os
 import numpy as np
 
+import torch
 import pytorch_lightning as pl
-from torch.utils.data import DataLoader
 
-from models.deeplab.modeling.deeplab import *
+from models.deeplab.modeling.deeplab import DeepLab
 from models.utils.loss import CELoss, DICELoss, CE_DICELoss
 from models.utils.metrics import Evaluator
-
-from datasets import build_dataloader
 
 
 class DeepLabModule(pl.LightningModule):
@@ -144,57 +141,4 @@ class DeepLabModule(pl.LightningModule):
         self.log('val_pixel_acc', np.mean(total_mIOU))
         self.log('val_miou', np.mean(total_pixelAcc))
         self.log('val_f1_score', np.mean(total_f1))
-
-
-class DeepLabDataModule(pl.LightningDataModule):
-    def __init__(self,
-                 args
-                 ):
-        super().__init__()
-
-        self.dataset = args.dataset
-        self.data_root = args.data_root
-        self.batch_size = args.batch_size
-        self.test_batch_size = args.test_batch_size
-        self.workers = args.workers
-
-        # Define transforms and Dataloader
-        self.boundary_ks = args.bounds_kernel_size if args.incl_bounds else None
-        self.deeplab_collate_fn = None
-        self.transform = None
-
-    def prepare_data(self):
-        # called only on 1 GPU
-        pass
-
-    def setup(self,
-              stage: str = "fit"):
-        resize = 2048
-
-        if stage == "fit" or stage is None:
-            split = 2
-            self.train_dataset, self.val_dataset = build_dataloader(self.dataset,
-                                                                    self.data_root,
-                                                                    self.boundary_ks,
-                                                                    self.transform,
-                                                                    resize,
-                                                                    split)
-
-    def train_dataloader(self):
-        return DataLoader(
-                self.train_dataset,
-                batch_size=self.batch_size,
-                shuffle=True,
-                num_workers=self.workers,
-                collate_fn=self.deeplab_collate_fn
-            )
-
-    def val_dataloader(self):
-        return DataLoader(
-                self.val_dataset,
-                batch_size=self.test_batch_size,
-                shuffle=False,
-                num_workers=self.workers,
-                collate_fn=self.deeplab_collate_fn
-            )
 
