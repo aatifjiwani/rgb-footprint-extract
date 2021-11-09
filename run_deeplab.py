@@ -150,8 +150,6 @@ def handle_training(args):
 
     # define callbacks
     from pytorch_lightning.callbacks import ModelCheckpoint
-    from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-    
     checkpoint_callback = ModelCheckpoint(
         monitor="val_loss",
         dirpath=os.path.join('weights', args.checkname),
@@ -161,17 +159,17 @@ def handle_training(args):
         save_on_train_epoch_end=True
     )
 
-    early_stop_callback = EarlyStopping(monitor="val_loss", 
-                                        min_delta=0.01, 
-                                        patience=3, 
-                                        verbose=False, 
-                                        mode="min")
+    # from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+    # early_stop_callback = EarlyStopping(monitor="val_loss", 
+    #                                     min_delta=0.01, 
+    #                                     patience=3, 
+    #                                     verbose=False, 
+    #                                     mode="min")
 
     callbacks=[checkpoint_callback]
 
     # use float (e.g 1.0) to set val frequency in epoch
     # if val_check_interval is integer, val frequency is in batch step
-    
     training_params = {
         "callbacks": callbacks,
         "gpus": args.gpu_ids,
