@@ -5,12 +5,14 @@
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 from models.deeplab.train import *
 # from models.deeplab.evaluate import *
 import argparse
 
-def main():
+
+def _parse_args():
     parser = argparse.ArgumentParser(description="DeeplabV3+ And Evaluation")
 
     # model parameters
@@ -18,7 +20,7 @@ def main():
     parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet', 'drn_c42'],
                         help='backbone name (default: resnet)')
-    parser.add_argument('--out-stride', type=int, default=16,
+    parser.add_argument('--out-stride', type=int, default=8,
                         help='network output stride (default: 8)')
     parser.add_argument('--dataset', type=str, default='urban3d',
                         choices=['urban3d', 'spaceNet', 'crowdAI', 'cauGiay', 'combined'],
@@ -32,8 +34,8 @@ def main():
     parser.add_argument('--freeze-bn', type=bool, default=False,
                         help='whether to freeze bn parameters (default: False)')
     parser.add_argument('--loss-type', type=str, default='ce_dice',
-                        choices=['ce', 'ce_dice', 'wce_dice'],
-                        help='loss func type (default: ce)')
+                        choices=['ce', 'dice', 'ce_dice', 'wce_dice'],
+                        help='loss func type (default: ce_dice)')
     parser.add_argument('--fbeta', type=float, default=1, help='beta for FBeta-Measure')
     parser.add_argument('--loss-weights', type=float, nargs="+", default=[1.0, 1.0], 
                         help='loss weighting')
@@ -66,9 +68,8 @@ def main():
     # cuda, seed and logging
     parser.add_argument('--no-cuda', action='store_true', default=
                         False, help='disables CUDA training')
-    parser.add_argument('--gpu-ids', default=1, type=int,
-                        help='use which gpu to train, must be a \
-                        comma-separated list of integers only (default=0)')
+    parser.add_argument('--gpu-ids', default=0, type=int, nargs="+",
+                        help='use which gpu to train (default=0)')
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     # name
@@ -78,10 +79,8 @@ def main():
     # evaluation option
     parser.add_argument('--no-val', action='store_true', default=False,
                         help='skip validation during training')
-    parser.add_argument('--use-wandb', action='store_true', default=False)
 
     parser.add_argument('--resume', type=str, default=None, help='experiment to load')
-    parser.add_argument('--pretrained', type=str, default=None, help='path to pretrained model')
     parser.add_argument("--evaluate", action='store_true', default=False)
     parser.add_argument('--best-miou', action='store_true', default=False)
 
@@ -92,6 +91,10 @@ def main():
                         help='kernel size for calculating boundary')
 
     args = parser.parse_args()
+    return args
+
+def main():
+    args = _parse_args()
     run_deeplab(args)
 
 def run_deeplab(args):
@@ -135,8 +138,11 @@ def handle_training(args):
     else:
         model = DeepLabModule(args)
     
+    # from torchsummary import summary
+    # summary(model, (3, 650, 650), device="cpu")
+
     # define callbacks
-    best_loss_checkpoint_callback = ModelCheckpoint(
+    checkpoint_callback = ModelCheckpoint(
         monitor="val_loss",
         dirpath=os.path.join('weights', args.checkname),
         filename="best_loss_{epoch:02d}_{train_loss:.2f}_{val_loss:.2f}",
@@ -145,19 +151,18 @@ def handle_training(args):
         save_on_train_epoch_end=True
     )
 
-    best_miou_checkpoint_callback = ModelCheckpoint(
-        monitor="val_miou",
-        dirpath=os.path.join('weights', args.checkname),
-        filename="best_miou_{epoch:02d}_{train_loss:.2f}_{val_miou:.2f}",
-        save_top_k=3,
-        mode="max",
-        save_on_train_epoch_end=True
-    )
+    early_stop_callback = EarlyStopping(monitor="val_loss", 
+                                        min_delta=0.01, 
+                                        patience=3, 
+                                        verbose=False, 
+                                        mode="min")
 
-    trainer = pl.Trainer(callbacks=[best_loss_checkpoint_callback, best_miou_checkpoint_callback],
+    # use float (e.g 1.0) to set val frequency in epoch
+    # if val_check_interval is integer, val frequency is in batch step
+    trainer = pl.Trainer(callbacks=[checkpoint_callback],
                          gpus=args.gpu_ids,
                          max_epochs=args.epochs,
-                         val_check_interval=1)
+                         val_check_interval=1.0)
     trainer.fit(model, dm)
 
 

@@ -29,12 +29,12 @@ class CauGiayDataset(Dataset):
 
         # Load image
         image = np.load(image_filepath)
-        image = torch.Tensor(image).permute(2, 0, 1)[None, :, :, :] ##Converts to 1,C,H,W
+        image = torch.Tensor(image).permute(2, 0, 1)[None, :, :, :] ## Converts to 1,C,H,W
 
         # Load masks
         mask = np.load(os.path.join(self.root_dir, "masks", image_filename.replace(".npy", "_mask.npy")))
         mask = (mask > 0).astype(np.int32)
-        mask = torch.Tensor(mask)[None, None, :, :] ##1, 1, H, W
+        mask = torch.Tensor(mask)[None, None, :, :] ## 1, 1, H, W
 
         # Apply transforms if any
         if self.transforms is not None:
@@ -49,7 +49,7 @@ class CauGiayDataset(Dataset):
         # Mask of shape H, W
         mask = torch.ceil(mask).squeeze()
 
-        batch = {'image': image, 'mask': mask, 'name': [image_filename.replace(".npy", "")]}
+        batch = {'image': image, 'mask': mask}
 
         # Generate boundary if specified
         if self.generate_boundary:

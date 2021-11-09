@@ -10,7 +10,7 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
 from models.deeplab.modeling.deeplab import *
-from models.utils.loss import SegmentationLosses
+from models.utils.loss import CELoss, DICELoss, CE_DICELoss
 from models.utils.metrics import Evaluator
 
 from datasets import build_dataloader
@@ -44,18 +44,18 @@ class DeepLabModule(pl.LightningModule):
                         dropout_high=args.dropout[1],
                     )
 
-        if args.pretrained is not None:
-            print("Loading pretrained model from {}".format(args.pretrained))
-            model_checkpoint = torch.load(args.pretrained)
-            self.model.load_state_dict(model_checkpoint)
-
         # setup criterion
         if self.incl_bounds:
             assert args.loss_type in ["wce_dice"]
 
-        self.criterion = SegmentationLosses(beta=args.fbeta,
-                                            weight=args.loss_weights
-                                            ).build_loss(mode=args.loss_type)
+        if args.loss_type == "ce":
+            self.criterion = CELoss(weight=args.loss_weights)
+        elif args.loss_type == "dice":
+            self.criterion = DICELoss(weight=args.loss_weights)
+        elif args.loss_type == "ce_dice":
+            self.criterion = CE_DICELoss(weight=args.loss_weights)
+        else:
+            raise ValueError("loss_type %s is not supported" % args.loss_type)
 
         self.evaluator = Evaluator(self.nclass)
 
@@ -75,21 +75,11 @@ class DeepLabModule(pl.LightningModule):
     def forward(self, x):
         output = self.model(x)
         return output
-
-    def _step(self, image, mask, boundary_weights):
-        output = self(image)
-
-        if boundary_weights is not None:
-            loss = self.criterion(output, mask, boundary_weights)
-        else:
-            loss = self.criterion(output, mask)
-
-        return output, loss
-
+    
     def training_step(self, batch, batch_idx):
         image, mask = batch['image'], batch['mask'].long()
         if self.incl_bounds:
-            boundary_weights = image['boundary']
+            boundary_weights = batch['boundary']
         else:
             boundary_weights = None
 
@@ -97,17 +87,32 @@ class DeepLabModule(pl.LightningModule):
         if self.dataset == "combined":
             image, mask = image.squeeze(), mask.squeeze()
 
-        _, loss = self._step(image, mask, boundary_weights)
+        output = self(image)
+
+        if boundary_weights is not None:
+            loss = self.criterion(output, mask, boundary_weights)
+        else:
+            loss = self.criterion(output, mask)
+
         self.log('train_loss', loss, on_step=False, on_epoch=True)
         return {"loss": loss}
 
     def validation_step(self, batch, batch_idx):
         image, mask = batch['image'], batch['mask'].long()
+        if self.incl_bounds:
+            boundary_weights = batch['boundary']
+        else:
+            boundary_weights = None
+
         # need to squeeze if combined dataset
         if self.dataset == "combined":
             image, mask = image.squeeze(), mask.squeeze()
 
-        output, loss = self._step(image, mask)
+        output = self(image)
+        if boundary_weights is not None:
+            loss = self.criterion(output, mask, boundary_weights)
+        else:
+            loss = self.criterion(output, mask)
 
         pred = torch.nn.functional.softmax(output, dim=1)
         pred = pred.data.cpu().numpy()
@@ -192,3 +197,4 @@ class DeepLabDataModule(pl.LightningDataModule):
                 num_workers=self.workers,
                 collate_fn=self.deeplab_collate_fn
             )
+
