@@ -85,9 +85,9 @@ def array_to_raster(data,
 
 if __name__ == "__main__":
     lon, lat = xy2lonlat(X_MIN, Y_MIN, z=22)
-    y, x, _, _ = utm.from_latlon(lat, lon)
+    x, y, _, _ = utm.from_latlon(lat, lon)
     array_to_raster(
-        np.zeros((100, 100, 3), dtype=np.uint8), 
+        np.zeros((1204, 1024, 3), dtype=np.uint8), 
         "temp.tif", 
         x, 
         y, 
