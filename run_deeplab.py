@@ -77,13 +77,14 @@ def _parse_args():
     # name
     parser.add_argument('--checkname', type=str, default=None,
                         help='set the checkpoint name')
+    parser.add_argument('--resume', type=str, default=None, help='resume training')
 
     # evaluation option
     parser.add_argument('--no-val', action='store_true', default=False,
                         help='skip validation during training')
 
     parser.add_argument("--inference", action='store_true', default=False)
-    parser.add_argument('--model-path', type=str, default=None, help='experiment to load')
+    parser.add_argument('--model-path', type=str, default=None, help='trained model for inference')
     parser.add_argument('--best-miou', action='store_true', default=False)
 
     #boundaries
@@ -142,11 +143,7 @@ def handle_training(args):
     dm = DeepLabDataModule(args)
     dm.setup("fit")
 
-    if args.model_path is not None:
-        print("Resuming from {}".format(args.model_path))
-        model = DeepLabModule.load_from_checkpoint(args.model_path)
-    else:
-        model = DeepLabModule(args)
+    model = DeepLabModule(args)
     
     # from torchsummary import summary
     # summary(model, (3, 650, 650), device="cpu")
@@ -178,7 +175,10 @@ def handle_training(args):
                          gpus=args.gpu_ids,
                          max_epochs=args.epochs,
                          val_check_interval=1.0)
-    trainer.fit(model, dm)
+    if args.resume is not None:
+        trainer.fit(model, dm, ckpt_path=args.resume)
+    else:
+        trainer.fit(model, dm)
 
 
 if __name__ == "__main__":
