@@ -82,10 +82,12 @@ def _parse_args():
     # evaluation option
     parser.add_argument('--no-val', action='store_true', default=False,
                         help='skip validation during training')
+    parser.add_argument('--best-miou', action='store_true', default=False)
 
+    # inference options
     parser.add_argument("--inference", action='store_true', default=False)
     parser.add_argument('--model-path', type=str, default=None, help='trained model for inference')
-    parser.add_argument('--best-miou', action='store_true', default=False)
+    parser.add_argument('--output-dir', type=str, default=".", help='store predictions')
 
     #boundaries
     parser.add_argument('--incl-bounds', action='store_true', default=False,
@@ -112,19 +114,20 @@ def run_deeplab(args):
 def handle_inference(args):
     assert args.model_path is not None
 
+    if not os.path.isdir(args.output_dir):
+        os.makedirs(args.output_dir)
+
     dm = DeepLabDataModule(args)
     dm.setup("inference")
 
     model = DeepLabModule.load_from_checkpoint(args.model_path)
 
-    from models.deeplab.evaluate import SemanticSegmentationTask
-    task = SemanticSegmentationTask(model)
+    from models.deeplab.inference import SemanticSegmentationTask
+    task = SemanticSegmentationTask(model, args.output_dir)
 
     trainer = pl.Trainer(gpus=args.gpu_ids)
-    predictions = trainer.predict(task, datamodule=dm)
-    predictions = torch.stack(predictions)
-    predictions = predictions.cpu().detach().numpy()
-
+    trainer.predict(task, datamodule=dm)
+    
 
 def handle_training(args):
     # default settings for epochs, batch_size and lr

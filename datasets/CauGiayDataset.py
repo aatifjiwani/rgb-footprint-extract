@@ -9,10 +9,10 @@ from torch.utils.data import Dataset
 class CauGiayDataset(Dataset):
     def __init__(
         self, 
-        root_dir, 
-        boundary_kernel_size = None,
-        transforms=None,
-        stage="train"
+        root_dir: str, 
+        boundary_kernel_size: int = None,
+        transforms = None,
+        stage: str ="train"
         ):
 
         self.stage = stage
@@ -41,7 +41,7 @@ class CauGiayDataset(Dataset):
         # Convert image to [0 1] and C, H, W
         image = image.squeeze()
         image = image.float() / 255.0 # Converts image from [0 255] to [0 1] fp
-        batch = {'image': image}
+        batch = {'image': image, 'name': image_filename}
 
         # Mask of shape H, W
         if self.stage in ["train", "test", "val"]:

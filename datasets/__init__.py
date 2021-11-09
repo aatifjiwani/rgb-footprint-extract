@@ -26,8 +26,15 @@ def build_dataloader(dataset, data_root, boundary_ks, transforms, resize=2048, s
         train = SpaceNetDataset(os.path.join(data_root, "SpaceNet", "Vegas", "train"), boundary_ks, transforms)
         val = SpaceNetDataset(os.path.join(data_root, "SpaceNet", "Vegas", "val"), boundary_ks, transforms)
     elif dataset == "cauGiay":
-        train = CauGiayDataset(os.path.join(data_root, "CauGiay", "train"), boundary_ks, transforms)
-        val = CauGiayDataset(os.path.join(data_root, "CauGiay", "val"), boundary_ks, transforms)
+        train = CauGiayDataset(
+                    os.path.join(data_root, "CauGiay", "train"), 
+                    boundary_ks, 
+                    transforms)
+        val = CauGiayDataset(
+                    os.path.join(data_root, "CauGiay", "val"), 
+                    boundary_ks, 
+                    transforms,
+                    stage="val")
     elif dataset == "crowdAI":
         train = CrowdAIDataset(os.path.join(data_root, "AICrowd", "train"), boundary_ks, transforms, data_slice=0.15)
         val = CrowdAIDataset(os.path.join(data_root, "AICrowd", "val"), boundary_ks, transforms, data_slice=0.15)
@@ -39,15 +46,24 @@ def build_dataloader(dataset, data_root, boundary_ks, transforms, resize=2048, s
 
     return train, val
 
+
 def build_test_dataloader(dataset, data_root, transforms):
     if dataset == "urban3d":
         return Urban3dDataset(os.path.join(data_root, "Urban3D/test"), boundary_kernel_size=None, transforms=transforms)
     elif dataset == "spaceNet":
         return SpaceNetDataset(os.path.join(data_root, "SpaceNet/Vegas/test"), None, transforms)
+    elif dataset == "cauGiay":
+        dataset = CauGiayDataset(
+                    os.path.join(data_root, "CauGiay", "inference"), 
+                    None, 
+                    transforms,
+                    stage="inference")
     elif dataset == "crowdAI":
         return CrowdAIDataset(os.path.join(data_root, "AICrowd/test"), None, transforms)
     else:
         raise NotImplementedError()
+    
+    return dataset
 
 
 class DeepLabDataModule(pl.LightningDataModule):
@@ -85,7 +101,9 @@ class DeepLabDataModule(pl.LightningDataModule):
                                                                     split)
         
         if stage == "inference" or stage is None:
-            self.inference_dataset = None
+            self.inference_dataset = build_test_dataloader(self.dataset,
+                                                           self.data_root,
+                                                           self.transform)
 
     def train_dataloader(self):
         if self.train_dataset is not None:
