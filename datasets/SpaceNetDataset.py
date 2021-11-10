@@ -61,4 +61,3 @@ class SpaceNetDataset(Dataset):
 
         # Convert mask weights to a scale of 0 - 1
         return maskwt_tensor / torch.max(maskwt_tensor)
-        

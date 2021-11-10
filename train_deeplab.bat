@@ -1,0 +1,18 @@
+python run_deeplab.py^
+ --backbone=drn_c42^
+ --out-stride=8^
+ --dataset=cauGiay^
+ --workers=4^
+ --loss-type=ce_dice^
+ --fbeta=0.5^
+ --epochs=100^
+ --batch-size=8^
+ --test-batch-size=8^
+ --weight-decay=1e-8^
+ --gpu-ids=0^
+ --lr=1e-5^
+ --loss-weights 0.5 0.5^
+ --dropout 0.3 0.5^
+ --checkname=_caugiay_deeplab_drn_c42_ce_dice_f0.5^
+ --resume=best_loss-epoch=65-train_loss=0.27-val_loss=0.25.ckpt^
+ --data-root=data\

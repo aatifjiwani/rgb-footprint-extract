@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch.nn.functional import interpolate
 from tqdm import tqdm
+from glob import glob
 from skimage.segmentation import find_boundaries
 
 class Processor():
@@ -21,13 +22,16 @@ class Processor():
         self.start = start
 
     def process(self,):
-        pbar = tqdm(os.listdir(self.masks_path))
+        pbar = tqdm(glob(os.path.join(self.masks_path, "*.npy")))
+
         if self.start is not None:
             print("Starting at {}".format(self.start))
-            pbar = tqdm(list(os.listdir(self.masks_path))[self.start:])
+            pbar = tqdm(glob(os.path.join(self.masks_path, "*.npy"))[self.start:])
 
         for mask_path in pbar:
-            mask = np.load(os.path.join(self.masks_path, mask_path))
+            basename = os.path.basename(mask_path)
+
+            mask = np.load(mask_path)
             mask = (mask > 0).astype(np.int32)
 
             if self.resize is not None:
@@ -49,7 +53,7 @@ class Processor():
                         mask_weight[:, si:ei, sj:ej] = 0
 
             np.save(
-                os.path.join(self.masks_wt_path, mask_path.replace("_mask.npy", "_mask_wt.npy")),
+                os.path.join(self.masks_wt_path, basename.replace("_mask.npy", "_mask_wt.npy")),
                 mask_weight.astype(np.uint8).squeeze()
             )
 
@@ -117,4 +121,6 @@ if __name__ == "__main__":
         processor.process()
 
     """
-    pass
+    import sys
+    processor = Processor(sys.argv[1], 10, 7.5, 150)
+    processor.process()
