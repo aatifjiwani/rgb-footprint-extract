@@ -17,7 +17,7 @@ def array_to_raster(data,
                     x_min,
                     y_max,
                     wkt_projection,
-                    pixel_size=PIXEL_SIZE,
+                    pixel_size,
                     data_type=gdal.GDT_Byte):
     """Array > Raster
     Save a raster from a C order array.
