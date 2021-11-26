@@ -4,6 +4,7 @@ import torch
 from torch.nn.functional import interpolate
 from tqdm import tqdm
 from glob import glob
+from PIL import Image
 from skimage.segmentation import find_boundaries
 
 class Processor():
@@ -22,16 +23,17 @@ class Processor():
         self.start = start
 
     def process(self,):
-        pbar = tqdm(glob(os.path.join(self.masks_path, "*.npy")))
+        pbar = tqdm(glob(os.path.join(self.masks_path, "*_mask.png")))
 
         if self.start is not None:
             print("Starting at {}".format(self.start))
-            pbar = tqdm(glob(os.path.join(self.masks_path, "*.npy"))[self.start:])
+            pbar = tqdm(glob(os.path.join(self.masks_path, "*_mask.png"))[self.start:])
 
         for mask_path in pbar:
             basename = os.path.basename(mask_path)
 
-            mask = np.load(mask_path)
+            mask = Image.open(mask_path).convert("L")
+            mask = np.array(mask)
             mask = (mask > 0).astype(np.int32)
 
             if self.resize is not None:
@@ -52,9 +54,9 @@ class Processor():
                     else:
                         mask_weight[:, si:ei, sj:ej] = 0
 
-            np.save(
-                os.path.join(self.masks_wt_path, basename.replace("_mask.npy", "_mask_wt.npy")),
-                mask_weight.astype(np.uint8).squeeze()
+            mask_weight_im = Image.fromarray(mask_weight.astype(np.uint8).squeeze())
+            mask_weight_im.save(
+                os.path.join(self.masks_wt_path, basename.replace("_mask.png", "_mask_wt.png")),
             )
 
     def resize_mask(self, mask):

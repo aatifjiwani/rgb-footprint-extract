@@ -9,7 +9,7 @@ import torch
 import pytorch_lightning as pl
 
 from models.deeplab.modeling.deeplab import DeepLab
-from models.utils.loss import CELoss, DICELoss, CE_DICELoss
+from models.utils.loss import CELoss, DICELoss, CE_DICELoss, MSELoss
 from models.utils.metrics import Evaluator
 
 
@@ -51,6 +51,8 @@ class DeepLabModule(pl.LightningModule):
             self.criterion = DICELoss(weight=args.loss_weights)
         elif args.loss_type == "ce_dice":
             self.criterion = CE_DICELoss(weight=args.loss_weights)
+        elif args.loss_type == "mse":
+            self.criterion = MSELoss(weight=args.loss_weights)
         else:
             raise ValueError("loss_type %s is not supported" % args.loss_type)
 

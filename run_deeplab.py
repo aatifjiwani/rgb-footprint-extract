@@ -25,7 +25,7 @@ def _parse_args():
     parser.add_argument('--out-stride', type=int, default=8,
                         help='network output stride (default: 8)')
     parser.add_argument('--dataset', type=str, default='urban3d',
-                        choices=['urban3d', 'spaceNet', 'crowdAI', 'cauGiay', 'combined'],
+                        choices=['urban3d', 'spaceNet', 'crowdAI', 'cauGiay', 'q1', 'combined'],
                         help='dataset name (default: urban3d)')
     parser.add_argument('--data-root', type=str, default='/data/',
                         help='datasets root path')
@@ -36,7 +36,7 @@ def _parse_args():
     parser.add_argument('--freeze-bn', type=bool, default=False,
                         help='whether to freeze bn parameters (default: False)')
     parser.add_argument('--loss-type', type=str, default='ce_dice',
-                        choices=['ce', 'dice', 'ce_dice', 'wce_dice'],
+                        choices=['ce', 'mse', 'dice', 'ce_dice', 'wce_dice'],
                         help='loss func type (default: ce_dice)')
     parser.add_argument('--fbeta', type=float, default=1, help='beta for FBeta-Measure')
     parser.add_argument('--loss-weights', type=float, nargs="+", default=[1.0, 1.0], 
@@ -88,6 +88,7 @@ def _parse_args():
     parser.add_argument("--inference", action='store_true', default=False)
     parser.add_argument('--model-path', type=str, default=None, help='trained model for inference')
     parser.add_argument('--output-dir', type=str, default=".", help='store predictions')
+    parser.add_argument('--conf-t', type=float, default=0.0, help='confidence thershold')
 
     #boundaries
     parser.add_argument('--incl-bounds', action='store_true', default=False,
@@ -123,7 +124,7 @@ def handle_inference(args):
     model = DeepLabModule.load_from_checkpoint(args.model_path)
 
     from models.deeplab.inference import SemanticSegmentationTask
-    task = SemanticSegmentationTask(model, args.output_dir)
+    task = SemanticSegmentationTask(model, args.output_dir, threshold=args.conf_t)
 
     trainer = pl.Trainer(gpus=args.gpu_ids)
     trainer.predict(task, datamodule=dm)
