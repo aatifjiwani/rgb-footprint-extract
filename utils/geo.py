@@ -17,7 +17,8 @@ def array_to_raster(data,
                     x_min,
                     y_max,
                     wkt_projection,
-                    pixel_size=PIXEL_SIZE,
+                    pixel_size,
+                    no_data_value=-9999,
                     data_type=gdal.GDT_Byte):
     """Array > Raster
     Save a raster from a C order array.
@@ -48,6 +49,7 @@ def array_to_raster(data,
 
     data = np.moveaxis(data, -1, 0)
     for i, image in enumerate(data, 1):
+        dataset.GetRasterBand(i).SetNoDataValue(no_data_value)
         dataset.GetRasterBand(i).WriteArray(image)
     
     # Write to disk.

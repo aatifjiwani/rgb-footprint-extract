@@ -6,7 +6,7 @@ from .CrowdAIDataset import CrowdAIDataset
 from .Urban3dDataset import Urban3dDataset
 from .SpaceNetDataset import SpaceNetDataset
 from .CombinedDataset import CombinedDataset
-from .CauGiayDataset import CauGiayDataset
+from .GoogleEarthDataset import GoogleEarthDataset
 
 def build_dataloader(dataset, data_root, boundary_ks, transforms, resize=2048, split=2):
     if dataset == "urban3d":
@@ -26,11 +26,11 @@ def build_dataloader(dataset, data_root, boundary_ks, transforms, resize=2048, s
         train = SpaceNetDataset(os.path.join(data_root, "SpaceNet", "Vegas", "train"), boundary_ks, transforms)
         val = SpaceNetDataset(os.path.join(data_root, "SpaceNet", "Vegas", "val"), boundary_ks, transforms)
     elif dataset == "cauGiay":
-        train = CauGiayDataset(
+        train = GoogleEarthDataset(
                     os.path.join(data_root, "CauGiay", "train"), 
                     boundary_ks, 
                     transforms)
-        val = CauGiayDataset(
+        val = GoogleEarthDataset(
                     os.path.join(data_root, "CauGiay", "val"), 
                     boundary_ks, 
                     transforms,
@@ -53,8 +53,14 @@ def build_test_dataloader(dataset, data_root, transforms):
     elif dataset == "spaceNet":
         return SpaceNetDataset(os.path.join(data_root, "SpaceNet/Vegas/test"), None, transforms)
     elif dataset == "cauGiay":
-        dataset = CauGiayDataset(
+        dataset = GoogleEarthDataset(
                     os.path.join(data_root, "CauGiay", "pred"), 
+                    None, 
+                    transforms,
+                    stage="pred")
+    elif dataset == "q1":
+        dataset = GoogleEarthDataset(
+                    os.path.join(data_root, "Q1", "pred"), 
                     None, 
                     transforms,
                     stage="pred")

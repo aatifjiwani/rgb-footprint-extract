@@ -1,12 +1,13 @@
 import os
 import numpy as np
 from glob import glob
+from PIL import Image
 
 import torch
 from torch.utils.data import Dataset
 
 
-class CauGiayDataset(Dataset):
+class GoogleEarthDataset(Dataset):
     def __init__(
         self, 
         root_dir: str, 
@@ -17,7 +18,7 @@ class CauGiayDataset(Dataset):
 
         self.stage = stage
         self.root_dir = root_dir
-        self.inputs = glob(os.path.join(self.root_dir, "images", "*.npz"))
+        self.inputs = glob(os.path.join(self.root_dir, "images", "*.png"))
 
         self.transforms = transforms
         self.generate_boundary = boundary_kernel_size is not None
@@ -30,8 +31,9 @@ class CauGiayDataset(Dataset):
         image_filename = os.path.basename(image_filepath)
 
         # Load image
-        data = np.load(image_filepath)
-        image =  data["arr_0"]
+        image = Image.open(image_filepath).convert("RGB")
+        image = np.array(image)
+
         image = torch.Tensor(image).permute(2, 0, 1)[None, :, :, :] ## Converts to 1,C,H,W
 
         # Apply transforms if any
@@ -47,7 +49,10 @@ class CauGiayDataset(Dataset):
         # Mask of shape H, W
         if self.stage in ["train", "test", "val"]:
             # Load masks
-            mask = np.load(os.path.join(self.root_dir, "masks", image_filename.replace(".npz", "_mask.npy")))
+            mask = Image.open(
+                        os.path.join(self.root_dir, "masks", image_filename.replace(".png", "_mask.png"))
+                    ).convert("L")
+            mask = np.array(mask)
             mask = (mask > 0).astype(np.int32)
             mask = torch.Tensor(mask)[None, None, :, :] ## 1, 1, H, W
 
@@ -66,7 +71,7 @@ class CauGiayDataset(Dataset):
         return batch
 
     def process_boundary(self, image_filename):
-        mask_wt = np.load(os.path.join(self.root_dir, "masks_wt", image_filename.replace(".npz", "_mask_wt.npy")))
+        mask_wt = np.load(os.path.join(self.root_dir, "masks_wt", image_filename.replace(".png", "_mask_wt.npy")))
         maskwt_tensor = torch.tensor(mask_wt.astype(float))
 
         # Convert mask weights to a scale of 0 - 1

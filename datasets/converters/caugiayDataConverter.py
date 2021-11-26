@@ -18,7 +18,7 @@ class CauGiayDataConverter:
             masks/ (optional)
     """
     
-    def __init__(self, rootDir, target_size=(650, 650)):
+    def __init__(self, rootDir, target_size=(1024, 1024)):
         self.rootDir = rootDir
         self.gtNames = glob(os.path.join(self.rootDir, "gtl", "*.png"))
 
@@ -64,16 +64,14 @@ class CauGiayDataConverter:
                     tile_mask = np.zeros(self.target_size)
                     tile_mask[:h, :w] = gt[y: y + h, x: x + w]
 
-                    np.save(os.path.join(self.mask_dir, "%s_%d_%d_mask.npy" % (basename, y, x)), tile_mask)
-                    np.save(os.path.join(self.img_dir, "%s_%d_%d.npy" % (basename, y, x)), tile_data)
+                    # np.save(os.path.join(self.mask_dir, "%s_%d_%d_mask.npy" % (basename, y, x)), tile_mask)
+                    # np.save(os.path.join(self.img_dir, "%s_%d_%d.npy" % (basename, y, x)), tile_data)
 
-                    # if y + h == im.shape[0] and x + w == im.shape[1]:
-                    if y ==0 and x == 0:
-                        debug_im = Image.fromarray(tile_data.astype(np.uint8))
-                        debug_im.save(os.path.join(self.img_dir, "%s_%d_%d.png" % (basename, y, x)))
+                    tile = Image.fromarray(tile_data.astype(np.uint8))
+                    tile.save(os.path.join(self.img_dir, "%s_%d_%d.png" % (basename, y, x)))
 
-                        debug_mask = Image.fromarray(tile_mask.astype(np.uint8))
-                        debug_mask.save(os.path.join(self.mask_dir, "%s_%d_%d_mask.png" % (basename, y, x)))
+                    mask = Image.fromarray(tile_mask.astype(np.uint8))
+                    mask.save(os.path.join(self.mask_dir, "%s_%d_%d_mask.png" % (basename, y, x)))
 
         print("Finished!")
 

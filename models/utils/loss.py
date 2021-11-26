@@ -15,6 +15,18 @@ class CELoss(nn.Module):
         return loss_ce
 
 
+class MSELoss(nn.Module):
+    def __init__(self, weight):
+        super().__init__()
+
+        self.weight = weight
+        self.loss = nn.MSELoss()
+    
+    def forward(self, input, target):
+        l = self.loss(input, target)
+        return l
+
+
 class DICELoss(nn.Module):
     def __init__(self, weight):
         super().__init__()
