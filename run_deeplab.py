@@ -2,10 +2,11 @@
 # as well as a template for metrics and the training pipeline. 
 # His code repository can be found here:
 # https://github.com/jfzhang95/pytorch-deeplab-xception
+import argparse
+from PIL import Image
 
 from models.deeplab.train import *
 from models.deeplab.evaluate import *
-import argparse
 
 def main():
     parser = argparse.ArgumentParser(description="DeeplabV3+ And Evaluation")
@@ -81,6 +82,13 @@ def main():
     parser.add_argument("--evaluate", action='store_true', default=False)
     parser.add_argument('--best-miou', action='store_true', default=False)
 
+    # inference options (includes some evaluation options)
+    parser.add_argument('--inference', action='store_true', default=False)
+    parser.add_argument('--input-filename', type=str, default=None, help='path to an input file to run inference on')
+    parser.add_argument('--output-filename', type=str, default=None, help='path to where predicted segmentation mask will be written')
+    parser.add_argument('--window-size', type=int, default=None, help="the size of grid blocks to sample from the input, use if encountering OOM issues")
+    parser.add_argument('--stride', type=int, default=None, help="the stride at which to sample grid blocks, recommended value is equal to `window_size`")
+
     #boundaries
     parser.add_argument('--incl-bounds', action='store_true', default=False,
                         help='includes boundaries of masks in loss function')
@@ -118,14 +126,43 @@ def run_deeplab(args):
         args.checkname = 'deeplab-'+str(args.backbone)
 
     torch.manual_seed(args.seed)
-    if args.evaluate:
+    if args.inference:
+        handle_inference(args)
+    elif args.evaluate:
         handle_evaluate(args)
     else:
         handle_training(args)
 
+def handle_inference(args):
+    # Validate arguments
+    input_formats, output_formats = {".npy": "numpy"}, [".npy", ".png", ".tiff"]
+    
+    get_ext = lambda filename: os.path.splitext(filename)[-1] if filename else None
+    input_ext, output_ext = get_ext(args.input_filename), get_ext(args.output_filename)
+    assert args.input_filename and input_ext in input_formats, f"Accepted input file formats: {input_formats.keys()}"
+    assert args.output_filename and output_ext in output_formats, f"Accepted output formats: {output_formats}"
+
+    if args.window_size or args.stride:
+        assert args.window_size and args.stride, "Both `window_size` and `stride` must be set."
+
+    args.dataset = input_formats[os.path.splitext(args.input_filename)[-1]]
+    args.test_batch_size = 1
+    tester = Tester(args)
+    print("Inference starting on {}...".format(args.input_filename))
+
+    final_output = tester.infer()
+    assert len(final_output.shape) == 2
+
+    if output_ext == ".png":
+        Image.fromarray((final_output*255)).save(args.output_filename)
+    elif output_ext == ".npy":
+        np.save(args.output_filename, final_output)
+    elif output_ext == ".tiff":
+        raise NotImplementedError("TIFF output support is coming soon.")
+
 def handle_evaluate(args):
     tester = Tester(args)
-    print("Experiment {} instantiated. Training starting...".format(args.checkname))
+    print("Experiment {} instantiated. Evaluation starting...".format(args.checkname))
 
     tester.test()
 
