@@ -27,18 +27,14 @@ class Tester(object):
         self.saver = Saver(args)
         self.saver.save_experiment_config()
         
-        # Define transforms and Dataloader
-        deeplab_collate_fn = None
-        transform = None
-        test_dataset = build_test_dataloader(args.dataset, args.data_root, transform)
+        # Define Dataloader. Also, define any transforms here
+        test_dataset = build_test_dataloader(args, transforms=None)
 
         print("Testing on {} samples".format(len(test_dataset)))
         self.test_loader = DataLoader(
                                     test_dataset, 
                                     batch_size=args.test_batch_size, 
-                                    shuffle=True, 
                                     num_workers=args.workers,
-                                    collate_fn=deeplab_collate_fn
                                 )
         self.nclass = args.num_classes
 
@@ -58,6 +54,37 @@ class Tester(object):
         self.model.eval()
         self.evaluator = Evaluator(self.nclass)
         self.curr_step = 0
+
+    def infer(self,):
+        assert self.test_loader.dataset.__class__.__name__ in ["NumpyDataset"]
+        height, width = self.test_loader.dataset.height, self.test_loader.dataset.width
+
+        tbar = tqdm(self.test_loader)
+        final_output = np.zeros((2, height, width), dtype=np.float32)
+        counts = np.zeros((height, width), dtype=np.float32)
+
+        for i, sample in enumerate(tbar):
+            image, coord = sample["image"], sample["coord"]
+            assert image.shape[0] == 1, "Inference on multiple images simulatenously is not supported"
+            if self.args.cuda:
+                image = image.cuda()
+
+            with torch.no_grad():
+                output = self.model(image)
+                pred = torch.nn.functional.softmax(output, dim=1).cpu().numpy().squeeze()
+
+            if len(self.test_loader) == 1:
+                final_output = pred
+                counts[:] = 1
+            else:
+                row, col = coord.squeeze()
+                
+                final_output[:, row:row+self.args.window_size, col:col+self.args.window_size] += pred
+                counts[row:row+self.args.window_size, col:col+self.args.window_size] += 1
+
+        final_output /= counts
+        final_output = final_output.argmax(axis=0).astype(np.uint8)
+        return final_output
 
     def test(self, ):
         tbar = tqdm(self.test_loader)
