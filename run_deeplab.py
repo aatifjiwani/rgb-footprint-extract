@@ -5,6 +5,11 @@
 
 import os
 
+import mlflow
+mlflow.set_tracking_uri("databricks")
+mlflow.set_experiment("/Users/hunglv@piv.asia/building-extraction-vn")
+import mlflow.pytorch
+
 import torch
 import pytorch_lightning as pl
 
@@ -59,6 +64,9 @@ def _parse_args():
                                 testing (default: auto)')
     parser.add_argument('--lr', type=float, default=0.0001, metavar='LR',
                         help='learning rate (default: auto)')
+    parser.add_argument('--lr-scheduler', type=str, default='poly',
+                        choices=['poly', 'step', 'cos'],
+                        help='lr scheduler mode: (default: poly)')
     # optimizer params
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')
@@ -131,6 +139,8 @@ def handle_inference(args):
     
 
 def handle_training(args):
+    mlflow.pytorch.autolog()
+
     # default settings for epochs, batch_size and lr
     if args.epochs is None:
         raise ValueError("epochs must be specified")
@@ -147,10 +157,9 @@ def handle_training(args):
     dm = DeepLabDataModule(args)
     dm.setup("fit")
 
+    args.steps_per_epoch = len(dm.train_dataloader())
+
     model = DeepLabModule(args)
-    
-    # from torchsummary import summary
-    # summary(model, (3, 650, 650), device="cpu")
 
     # define callbacks
     from pytorch_lightning.callbacks import ModelCheckpoint
@@ -163,14 +172,14 @@ def handle_training(args):
         save_on_train_epoch_end=True
     )
 
-    # from pytorch_lightning.callbacks.early_stopping import EarlyStopping
-    # early_stop_callback = EarlyStopping(monitor="val_loss", 
-    #                                     min_delta=0.01, 
-    #                                     patience=3, 
-    #                                     verbose=False, 
-    #                                     mode="min")
+    from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+    early_stop_callback = EarlyStopping(monitor="val_loss", 
+                                        min_delta=0.005, 
+                                        patience=3, 
+                                        verbose=False, 
+                                        mode="min")
 
-    callbacks=[checkpoint_callback]
+    callbacks=[checkpoint_callback, early_stop_callback]
 
     # use float (e.g 1.0) to set val frequency in epoch
     # if val_check_interval is integer, val frequency is in batch step

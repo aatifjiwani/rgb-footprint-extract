@@ -5,7 +5,7 @@ python run_deeplab.py^
  --workers=8^
  --loss-type=ce^
  --fbeta=0.5^
- --epochs=100^
+ --epochs=1^
  --batch-size=8^
  --test-batch-size=4^
  --weight-decay=1e-8^
@@ -13,5 +13,5 @@ python run_deeplab.py^
  --lr=1e-4^
  --loss-weights 0.5 0.5^
  --dropout 0.3 0.5^
- --checkname=_caugiay_deeplab_drn_c42_ce_f0.5_sz1024^
+ --checkname=_caugiay_drn_c42^
  --data-root=data\

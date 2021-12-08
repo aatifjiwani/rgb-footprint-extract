@@ -11,11 +11,13 @@ import pytorch_lightning as pl
 from models.deeplab.modeling.deeplab import DeepLab
 from models.utils.loss import CELoss, DICELoss, CE_DICELoss, MSELoss
 from models.utils.metrics import Evaluator
+# from models.utils.scheduler import LR_Scheduler
 
 
 class DeepLabModule(pl.LightningModule):
     def __init__(self,
-                 args):
+                 args,
+                 ):
         super().__init__()
         self.save_hyperparameters()
 
@@ -23,10 +25,13 @@ class DeepLabModule(pl.LightningModule):
         self.dataset = args.dataset
         self.incl_bounds = args.incl_bounds
         self.nclass = args.num_classes
-        self.momentum=args.momentum
-        self.weight_decay=args.weight_decay
-        self.nesterov=args.nesterov
+        self.momentum = args.momentum
+        self.weight_decay = args.weight_decay
+        self.nesterov = args.nesterov
         self.lr = args.lr
+        self.lr_scheduler = args.lr_scheduler
+        self.epochs = args.epochs
+        self.steps_per_epoch = args.steps_per_epoch
 
         # setup model
         print("Using backbone {} with output stride {} and dropout values {}, {}"
@@ -59,16 +64,23 @@ class DeepLabModule(pl.LightningModule):
         self.evaluator = Evaluator(self.nclass)
 
     def configure_optimizers(self):
-        train_params = [
-            {'params': self.model.get_1x_lr_params(), 'lr': self.lr},
-            {'params': self.model.get_10x_lr_params(), 'lr': self.lr * 10}
-        ]
+        # train_params = [
+        #     {'params': self.model.get_1x_lr_params(), 'lr': self.lr},
+        #     {'params': self.model.get_10x_lr_params(), 'lr': self.lr * 10}
+        # ]
 
-        optimizer = torch.optim.SGD(train_params,
+        optimizer = torch.optim.SGD(self.parameters(),
+                                    lr=self.lr,
                                     momentum=self.momentum,
                                     weight_decay=self.weight_decay,
                                     nesterov=self.nesterov)
 
+        # scheduler = LR_Scheduler(self.lr_scheduler, 
+        #                          self.lr, 
+        #                          self.epochs, 
+        #                          self.steps_per_epoch)
+
+        # return [optimizer], [scheduler]
         return optimizer
 
     def forward(self, x):
