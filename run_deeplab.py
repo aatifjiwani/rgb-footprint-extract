@@ -39,7 +39,7 @@ def main():
                         help='number of classes to predict (2 for binary mask)')
     parser.add_argument('--dropout', type=float, nargs="+", default=[0.1, 0.5], 
                     help='dropout values')
-    parser.add_argument('--preempt-robust', type=bool, default=False,
+    parser.add_argument('--preempt-robust', action='store_true', default=False,
                     help='True if you want the model to find the latest checkpoint before loading in \
                     resume checkpoint. Helpful when SLURM pre-empts and stops the job and you don\'t want to restart from scratch')
 
