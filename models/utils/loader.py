@@ -2,9 +2,10 @@ import os
 import torch
 from models.deeplab.modeling.sync_batchnorm.replicate import patch_replication_callback
 
-def load_model(model, resume_dataset=None, best_miou=False, is_cuda=False, gpu_ids=None):
+def load_model(model, optimizer, resume_dataset=None, best_miou=False, is_cuda=False, gpu_ids=None):
     # Load state_dict, if any
     model_checkpoint = None
+    epoch = 0
     if resume_dataset is not None:
         checkpoint_name = "best_miou_checkpoint.pth.tar" if best_miou else "best_loss_checkpoint.pth.tar" 
         checkpoint_path = os.path.join("weights", resume_dataset, checkpoint_name)
@@ -19,10 +20,22 @@ def load_model(model, resume_dataset=None, best_miou=False, is_cuda=False, gpu_i
         patch_replication_callback(model)
         model = model.cuda()
 
-
+        # NEW CODE TO HANDLE MORE INTRICATE CHECKPOINTING -- this allows us to resume from arbitrary epochs
         if model_checkpoint is not None:
-            model.load_state_dict(model_checkpoint)
+            if resume_dataset in ['crowdAI', 'spaceNet', 'urban3d']:
+                model.load_state_dict(model_checkpoint)
+            else:
+                model.load_state_dict(model_checkpoint['state_dict'])
+                optimizer.load_state_dict(model_checkpoint['optimizer'])
+                epoch = int(model_checkpoint['epoch'])
+
+            # model.load_state_dict(model_checkpoint['state_dict'])
+            # optimizer.load_state_dict(model_checkpoint['optimizer'])
+            # epoch = int(model_checkpoint['epoch'])
+            # model.load_state_dict(model_checkpoint)
+
     elif model_checkpoint is not None:
+        # WILL NEVER RUN THIS (but if we do, need to add functionality to handle for intricate checkpointing)
         try:
             model.load_state_dict(model_checkpoint)
         except RuntimeError:
@@ -36,4 +49,4 @@ def load_model(model, resume_dataset=None, best_miou=False, is_cuda=False, gpu_i
             model_checkpoint = new_checkpoint
             model.load_state_dict(model_checkpoint)
         
-    return model
+    return model, optimizer, epoch

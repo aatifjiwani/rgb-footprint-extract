@@ -48,6 +48,8 @@ class NumpyDataset(Dataset):
             image = image[row:row+self.window_size, col:col+self.window_size, :]
         
         image = torch.Tensor(image).permute(2, 0, 1)
+        if image.shape[0] == 4:
+            image = image[:3, :, :]
         if self.transforms is not None:
             for transform in self.transforms:
                 image = transform(image)

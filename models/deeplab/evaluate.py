@@ -48,8 +48,13 @@ class Tester(object):
                         dropout_low=args.dropout[0],
                         dropout_high=args.dropout[1],
                     )
+
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=args.lr, momentum=args.momentum,
+                                    weight_decay=args.weight_decay, nesterov=args.nesterov)
+
+        self.optimizer = optimizer
                     
-        self.model = load_model(self.model, args.resume, args.best_miou, args.cuda, args.gpu_ids)
+        self.model, self.optimizer, self.start_epoch = load_model(self.model, self.optimizer, args.resume, args.best_miou, args.cuda, args.gpu_ids)
 
         self.model.eval()
         self.evaluator = Evaluator(self.nclass)

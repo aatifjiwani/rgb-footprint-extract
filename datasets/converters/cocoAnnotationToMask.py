@@ -66,4 +66,5 @@ if __name__ == "__main__":
         converter = COCOAnnotationToMask('/data/AICrowd/val')
         converter.convert()
     """
-    pass
+    converter = COCOAnnotationToMask('data/AICrowd/val')
+    converter.convert()

@@ -19,7 +19,7 @@ def main():
     parser.add_argument('--out-stride', type=int, default=16,
                         help='network output stride (default: 8)')
     parser.add_argument('--dataset', type=str, default='urban3d',
-                        choices=['urban3d', 'spaceNet', 'crowdAI', 'combined'],
+                        choices=['urban3d', 'spaceNet', 'crowdAI', 'combined', 'OSM', 'combined_naip'],
                         help='dataset name (default: urban3d)')
     parser.add_argument('--data-root', type=str, default='/data/',
                         help='datasets root path')
@@ -27,7 +27,7 @@ def main():
                         metavar='N', help='dataloader threads')
     parser.add_argument('--sync-bn', type=bool, default=None,
                         help='whether to use sync bn (default: auto)')
-    parser.add_argument('--freeze-bn', type=bool, default=False,
+    parser.add_argument('--freeze-bn', action='store_true', default=False,
                         help='whether to freeze bn parameters (default: False)')
     parser.add_argument('--loss-type', type=str, default='ce_dice',
                         choices=['ce', 'ce_dice', 'wce_dice'],
@@ -53,6 +53,8 @@ def main():
                                 testing (default: auto)')
     parser.add_argument('--lr', type=float, default=0.0001, metavar='LR',
                         help='learning rate (default: auto)')
+    parser.add_argument('--loss-weights-param', type=float, default=1.01,
+                        help='base of exponential function in defining loss weights')
     # optimizer params
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')
@@ -71,6 +73,8 @@ def main():
                         help='random seed (default: 1)')
     # name
     parser.add_argument('--checkname', type=str, default=None,
+                        help='set the checkpoint name')
+    parser.add_argument('--checkname-add', type=str, default=None,
                         help='set the checkpoint name')
 
     # evaluation option
@@ -123,7 +127,20 @@ def run_deeplab(args):
         args.test_batch_size = args.batch_size
 
     if args.checkname is None:
-        args.checkname = 'deeplab-'+str(args.backbone)
+        if args.checkname_add is None:
+            if 'los_angeles' in args.data_root:
+                args.checkname = f'LA_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+            elif 'san_jose' in args.data_root:
+                args.checkname = f'SJ_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+            else:
+                args.checkname = f'{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+        else:
+            if 'los_angeles' in args.data_root:
+                args.checkname = f'LA_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+            elif 'san_jose' in args.data_root:
+                args.checkname = f'SJ_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+            else:
+                args.checkname = f'{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
 
     torch.manual_seed(args.seed)
     if args.inference:
@@ -171,9 +188,11 @@ def handle_training(args):
 
     print("Learning rate: {}; L2 factor: {}".format(args.lr, args.weight_decay))
     print("Experiment {} instantiated. Training starting...".format(args.checkname))
+    # NEW
+    print("Starting from epoch {}".format(trainer.start_epoch))
     print("Training for {} epochs".format(trainer.args.epochs))
     print("Batch size: {}; Test Batch Size: {}".format(args.batch_size, args.test_batch_size))
-    for epoch in range(trainer.args.start_epoch, trainer.args.epochs):
+    for epoch in range(trainer.start_epoch, trainer.start_epoch+trainer.args.epochs):
         trainer.training(epoch)
         if not trainer.args.no_val:
             trainer.validation(epoch)
