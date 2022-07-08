@@ -4,10 +4,9 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=nathanjo@law.stanford.edu
 #SBATCH --partition=owners
-#SBATCH --time=12:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mem=50GB
 #SBATCH --gres=gpu:2
-#SBATCH --dependency=afterany:57371088
 
 cd ../../
 
