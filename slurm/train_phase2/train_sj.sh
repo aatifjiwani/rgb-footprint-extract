@@ -4,7 +4,7 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=nathanjo@law.stanford.edu
 #SBATCH --partition=owners
-#SBATCH --time=07:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mem=50GB
 #SBATCH --gres=gpu:2
 
