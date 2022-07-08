@@ -231,8 +231,7 @@ class Trainer(object):
             'optimizer': self.optimizer.state_dict()
         }
 
-        # UNCOMMENT LINE 235 LATER
-        # self.saver.save_checkpoint(checkpoint, np.mean(total_loss), np.mean(total_mIOU))
+        self.saver.save_checkpoint(checkpoint, np.mean(total_loss), np.mean(total_mIOU))
         # self.saver.save_checkpoint(self.model.state_dict(), np.mean(total_loss), np.mean(total_mIOU))
 
         # select random image and log it to WandB

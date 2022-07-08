@@ -4,9 +4,9 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=nathanjo@law.stanford.edu
 #SBATCH --partition=owners
-#SBATCH --time=00:30:00
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=32GB
+#SBATCH --time=04:00:00
+#SBATCH --cpus-per-task=6
+#SBATCH --mem=64GB
 
 cd ../
 

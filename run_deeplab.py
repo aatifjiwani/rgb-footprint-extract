@@ -39,6 +39,9 @@ def main():
                         help='number of classes to predict (2 for binary mask)')
     parser.add_argument('--dropout', type=float, nargs="+", default=[0.1, 0.5], 
                     help='dropout values')
+    parser.add_argument('--preempt-robust', type=bool, default=False,
+                    help='True if you want the model to find the latest checkpoint before loading in \
+                    resume checkpoint. Helpful when SLURM pre-empts and stops the job and you don\'t want to restart from scratch')
 
     # training hyper params
     parser.add_argument('--epochs', type=int, default=None, metavar='N',
@@ -141,6 +144,13 @@ def run_deeplab(args):
                 args.checkname = f'SJ_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
             else:
                 args.checkname = f'{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+
+    if args.preempt_robust:
+        checkpoint_name = "best_miou_checkpoint.pth.tar" if args.best_miou else "best_loss_checkpoint.pth.tar" 
+        # check if checkname path exists
+        if os.path.exists(os.path.join('weights', args.checkname, checkpoint_name)):
+            # if it does, resume from checkname. allows us to automatically restart our training job if slurm preempts
+            args.resume = args.checkname
 
     torch.manual_seed(args.seed)
     if args.inference:
