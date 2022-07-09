@@ -40,33 +40,33 @@ class Trainer(object):
         train_dataset, val_dataset = build_dataloader(args.dataset, args.data_root, boundary_ks, transform, resize, split)
 
         print("Training on {} samples, Validating on {} samples".format(len(train_dataset), len(val_dataset)))
-        # self.validation_loader = DataLoader(
-        #                             val_dataset, 
-        #                             batch_size=args.test_batch_size, 
-        #                             shuffle=True, 
-        #                             num_workers=args.workers,
-        #                             collate_fn=deeplab_collate_fn
-        #                         )
-        # self.train_loader = DataLoader(
-        #                         train_dataset, 
-        #                         batch_size=args.batch_size, 
-        #                         shuffle=True, 
-        #                         num_workers=args.workers,
-        #                         collate_fn=deeplab_collate_fn    
-        #                     )
-
         self.validation_loader = DataLoader(
                                     val_dataset, 
                                     batch_size=args.test_batch_size, 
+                                    shuffle=True, 
                                     num_workers=args.workers,
                                     collate_fn=deeplab_collate_fn
                                 )
         self.train_loader = DataLoader(
                                 train_dataset, 
                                 batch_size=args.batch_size, 
+                                shuffle=True, 
                                 num_workers=args.workers,
                                 collate_fn=deeplab_collate_fn    
                             )
+
+        # self.validation_loader = DataLoader(
+        #                             val_dataset, 
+        #                             batch_size=args.test_batch_size, 
+        #                             num_workers=args.workers,
+        #                             collate_fn=deeplab_collate_fn
+        #                         )
+        # self.train_loader = DataLoader(
+        #                         train_dataset, 
+        #                         batch_size=args.batch_size, 
+        #                         num_workers=args.workers,
+        #                         collate_fn=deeplab_collate_fn    
+        #                     )
 
 
         self.nclass = args.num_classes
