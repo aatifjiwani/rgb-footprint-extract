@@ -68,9 +68,9 @@ class SegmentationLosses(object):
         #     w.write(f'Size of model output: {logit.size()}\n')
         #     w.write(f'Size of mask_wt: {weights.size()}\n')
 
-        with open('debug.txt', 'a') as w:
-            w.write(f'loss_weights max: {loss_weights.max()}\n')
-            w.write(f'loss_weights min: {loss_weights.min()}\n')
+        # with open('debug.txt', 'a') as w:
+        #     w.write(f'loss_weights max: {loss_weights.max()}\n')
+        #     w.write(f'loss_weights min: {loss_weights.min()}\n')
 
         weights_exp = torch.exp(weights) ** 2 # [0 - 1] --> [1 e**3=20]
         assert weights_exp.size() == logits_log_probs.size()
@@ -133,9 +133,9 @@ class SegmentationLosses(object):
     def WCE_DICELoss(self, logit, target, weight=None, loss_weights=None):
         wce = self.CrossEntropyLoss_Manual(logit, target, weight, loss_weights)
         dice_loss = self.DICELoss(F.log_softmax(logit, dim=1), target)
-        with open('debug.txt', 'a') as w:
-            w.write(f'WCE: {wce}\n')
-            w.write(f'FBeta: {dice_loss}\n')
+        # with open('debug.txt', 'a') as w:
+        #     w.write(f'WCE: {wce}\n')
+        #     w.write(f'FBeta: {dice_loss}\n')
 
 
         return self.weight[0]*wce + self.weight[1]*dice_loss
