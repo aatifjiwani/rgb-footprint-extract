@@ -14,5 +14,4 @@ singularity exec --nv $GROUP_HOME/singularity/rgb-building1.sif python3 run_deep
     --workers=2 --epochs=1 --test-batch-size=1 --gpu-ids=0 --resume=SJ_OSM_0.2_True_0.0001_0.0001_1.03_crowdAI --best-miou \
     --window-size=256 --stride=256 \
     --input-filename='/oak/stanford/groups/deho/building_compliance/san_jose_naip_512/train/images/m_3712141_se_10_060_20200525_134.npy' \
-    --output-filename='p2_sj_adu_0.2_1.03_miou.npy' 
-
+    --output-filename='p2_sj_adu_0.2_1.03_miou.npy'
