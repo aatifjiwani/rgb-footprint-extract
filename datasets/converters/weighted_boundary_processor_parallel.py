@@ -124,6 +124,6 @@ if __name__ == "__main__":
         processor.process()
 
     """
-    for i in ['train', 'val', 'test']:
-        processor = Processor(f"/oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2/{i}/", 10, 7.5, 150)
+    for i in ['train', 'val']:
+        processor = Processor(f"/oak/stanford/groups/deho/building_compliance/los_angeles_naip/2016_rgb_footprint_512/phase2/{i}/", 10, 7.5, 150)
         processor.process()
