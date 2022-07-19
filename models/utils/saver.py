@@ -14,9 +14,10 @@ class Saver(object):
         self.directory = os.path.join('run', args.dataset, args.checkname)
         self.save_directory = os.path.join('weights', args.checkname)
         if args.use_wandb:
+            wandb.login(key=['442457cbcc6687d523d8e026badba7a23fe816bf'])
             wandb.init(
-                entity="<entity>",
-                project="<project>",
+                #entity="<entity>",
+                project="adus",
                 name=args.dataset + args.checkname,
                 config=vars(args))
         
@@ -50,8 +51,8 @@ class Saver(object):
 
         if self.args.use_wandb:
             wandb.log({
-                           "{}_input_{}".format(filename, self.images): wandb.Image(input_saved), 
-                           "{}_pred_{}".format(filename, self.images): wandb.Image(pred_saved), 
+                           "{}_input_{}".format(filename, self.images): wandb.Image(input_saved),
+                           "{}_pred_{}".format(filename, self.images): wandb.Image(pred_saved),
                            "{}_gt_{}".format(filename, self.images): wandb.Image(gt_saved),
                      })
 

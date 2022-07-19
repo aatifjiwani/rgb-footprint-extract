@@ -19,6 +19,7 @@ from models.utils.saver import Saver
 from models.utils.metrics import Evaluator
 from models.utils.collate_fn import generate_split_collate_fn, handle_concatenation
 from models.utils.custom_transforms import tensor_resize
+from models.utils.wandb_utils import *
 
 from datasets import build_dataloader
 
@@ -193,6 +194,9 @@ class Trainer(object):
         total_mIOU = []
         total_f1 = []
 
+        if self.args.use_wandb:
+            wandb_imgs_list = []
+
         for i, sample in enumerate(tbar):
             image, mask, loss_weights = sample['image'], sample['mask'].long(), sample['mask_loss']
             names = sample['name']
@@ -230,6 +234,13 @@ class Trainer(object):
             else:
                 total_f1.append(0)
 
+            # Log segmentation map to WandB
+            if self.args.use_wandb:
+                wandb_imgs_list.append(
+                    wandb_segmentation_image(
+                        input=image, pred_mask=pred, gt_mask=target, class_labels={0: 'bg', 1: 'building'})
+                )
+
                 
         self.saver.log_wandb(epoch, self.curr_step, {
                                                         "val_loss": np.mean(total_loss),
@@ -248,14 +259,21 @@ class Trainer(object):
         # self.saver.save_checkpoint(self.model.state_dict(), np.mean(total_loss), np.mean(total_mIOU))
 
         # select random image and log it to WandB
-        # filename, image, pred, target = handle_concatenation(
-        #                                                     self.args.dataset == "combined",
-        #                                                     self.args.split,
-        #                                                     image,
-        #                                                     pred,
-        #                                                     target,
-        #                                                     names
-        #                                                 )
+        filename, image, pred, target = handle_concatenation(
+                                                             self.args.dataset == "combined",
+                                                             None,
+                                                             image,
+                                                             pred,
+                                                             target,
+                                                             names
+                                                         )
 
-        # self.saver.log_wandb_image(filename, image, pred, target)
+        self.saver.log_wandb_image(filename, image, pred, target)
+
+        # Log segmentations in WandB
+        if self.args.use_wandb:
+            wandb.log({
+                'Predictions': wandb_imgs_list
+            })
+
         self.curr_step += 1
