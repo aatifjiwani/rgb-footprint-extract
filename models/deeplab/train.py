@@ -236,9 +236,12 @@ class Trainer(object):
 
             # Log segmentation map to WandB
             if self.args.use_wandb:
+                filename_single, image_single, pred_single, target_single = handle_concatenation(
+                    self.args.dataset == "combined", None, image, pred, target, names)
                 wandb_imgs_list.append(
                     wandb_segmentation_image(
-                        input=image, pred_mask=pred, gt_mask=target, class_labels={0: 'bg', 1: 'building'})
+                        input_img=image_single, pred_mask=pred_single, gt_mask=target_single,
+                        class_labels={0: 'bg', 1: 'building'})
                 )
 
                 
@@ -268,7 +271,7 @@ class Trainer(object):
                                                              names
                                                          )
 
-        self.saver.log_wandb_image(filename, image, pred, target)
+        #self.saver.log_wandb_image(filename, image, pred, target)
 
         # Log segmentations in WandB
         if self.args.use_wandb:

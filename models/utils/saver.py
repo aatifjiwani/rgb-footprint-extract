@@ -14,7 +14,7 @@ class Saver(object):
         self.directory = os.path.join('run', args.dataset, args.checkname)
         self.save_directory = os.path.join('weights', args.checkname)
         if args.use_wandb:
-            wandb.login(key=['442457cbcc6687d523d8e026badba7a23fe816bf'])
+            wandb.login(key='442457cbcc6687d523d8e026badba7a23fe816bf')
             wandb.init(
                 #entity="<entity>",
                 project="adus",
@@ -83,13 +83,18 @@ class Saver(object):
         if val_loss < self.best_loss:
             print("Saving best loss checkpoint")
             self.best_loss = val_loss
-            torch.save(state, os.path.join(self.save_directory, 'best_loss_{}'.format(filename)))
+            if self.args.use_wandb:
+                torch.save(state, os.path.join(self.save_directory, 'best_loss_{}_{}'.format(wandb.run.id, filename)))
+            else:
+                torch.save(state, os.path.join(self.save_directory, 'best_loss_{}'.format(filename)))
         
         if val_miou > self.best_miou:
             print("Saving best mIOU checkpoint")
             self.best_miou = val_miou
-            torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
-        
+            if self.args.use_wandb:
+                torch.save(state, os.path.join(self.save_directory, 'best_miou_{}_{}'.format(wandb.run.id, filename)))
+            else:
+                torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
 
     def save_experiment_config(self):
         logfile = os.path.join(self.directory, 'parameters.txt')
