@@ -31,7 +31,8 @@ def load_model(model, optimizer, resume_dataset=None, best_miou=False, is_cuda=F
             else:
                 model.load_state_dict(model_checkpoint['state_dict'])
                 optimizer.load_state_dict(model_checkpoint['optimizer'])
-                epoch = int(model_checkpoint['epoch'])+1 # we should start at the epoch right after what's checkpointed
+                epoch = int(model_checkpoint['epoch'])
+                # epoch = int(model_checkpoint['epoch'])+1 # we should start at the epoch right after what's checkpointed
 
             # model.load_state_dict(model_checkpoint['state_dict'])
             # optimizer.load_state_dict(model_checkpoint['optimizer'])
