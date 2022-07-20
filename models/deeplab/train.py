@@ -154,8 +154,6 @@ class Trainer(object):
                             times.append(l)
 
                 # assert that length of validation set is the same as start_epoch
-                print(len(val_metrics_historical['loss']))
-                print(self.start_epoch)
                 assert len(val_metrics_historical['loss']) == self.start_epoch
 
                 # EDGE CASE: if pre-empted mid-way through, truncate that from the jsonl file.
@@ -164,7 +162,7 @@ class Trainer(object):
 
                     # rewrite jsonl file
                     # with open(jsonl_fp, 'w') as f:
-                    with(open(os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/run', args.checkname, 'metrics_test.jsonl')), 'w') as f:
+                    with open(os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/run', args.checkname, 'metrics_test.jsonl'), 'w') as f:
                         e = 0
                         while e < len(val_metrics_historical['loss']): # need to think about this condition a little more
                             for idx, element in enumerate(train_metrics_historical[e]['loss']):
