@@ -132,6 +132,7 @@ class Trainer(object):
                 # open jsonl 
                 val_metrics_historical = {'loss': [], 'mIOU': [], 'pixel_acc': [], 'f1': []}
                 train_metrics_historical = {}
+                times = []
                 with open(jsonl_fp, 'r') as f:
                     for line in f:
                         l = json.loads(line)
@@ -140,7 +141,7 @@ class Trainer(object):
                             val_metrics_historical['mIOU'].append(l['val_mIOU'])
                             val_metrics_historical['pixel_acc'].append(l['val_pixel_acc'])
                             val_metrics_historical['f1'].append(l['val_f1'])
-                        else:
+                        elif 'train_loss' in l:
                             if l['epoch'] not in train_metrics_historical:
                                 train_metrics_historical[l['epoch']] = {'loss': [l['train_loss']], 'mIOU': [l['mIOU']], 
                                                                         'pixel_acc': [l['pixel_acc']], 'f1': [l['f1']]}
@@ -149,6 +150,8 @@ class Trainer(object):
                                 train_metrics_historical[l['epoch']]['mIOU'].append(l['mIOU'])
                                 train_metrics_historical[l['epoch']]['pixel_acc'].append(l['pixel_acc'])
                                 train_metrics_historical[l['epoch']]['f1'].append(l['f1'])
+                        else:
+                            times.append(l)
 
                 # assert that length of validation set is the same as start_epoch
                 assert len(val_metrics_historical['loss']) == self.start_epoch
@@ -167,6 +170,9 @@ class Trainer(object):
                                     'pixel_acc': train_metrics_historical[e]['pixel_acc'][idx], 'f1': train_metrics_historical[e]['f1'][idx], 'epoch': e}
                                 f.write(dic_line)
                                 f.write('\n')
+
+                            f.write(times[e])
+                            f.write('\n')
 
                             # then save the val metrics
                             dic_line = {'val_loss': val_metrics_historical['loss'][e], 'val_mIOU': val_metrics_historical['mIOU'][e], 
