@@ -141,7 +141,7 @@ class Trainer(object):
                             val_metrics_historical['pixel_acc'].append(l['val_pixel_acc'])
                             val_metrics_historical['f1'].append(l['val_f1'])
                         else:
-                            if l['epoch'] not in tran_metrics_historical:
+                            if l['epoch'] not in train_metrics_historical:
                                 train_metrics_historical[l['epoch']] = {'loss': [l['train_loss']], 'mIOU': [l['mIOU']], 
                                                                         'pixel_acc': [l['pixel_acc']], 'f1': [l['f1']]}
                             else:
