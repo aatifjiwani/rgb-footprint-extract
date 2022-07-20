@@ -7,8 +7,12 @@ def load_model(model, optimizer, resume_dataset=None, best_miou=False, is_cuda=F
     model_checkpoint = None
     epoch = 0
     if resume_dataset is not None:
-        checkpoint_name = "best_miou_checkpoint.pth.tar" if best_miou else "best_loss_checkpoint.pth.tar" 
-        checkpoint_path = os.path.join("weights", resume_dataset, checkpoint_name)
+        checkpoint_path = ''
+        if 'most_recent_epoch_checkpoint.pth.tar' in resume_dataset:
+            checkpoint_path = os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/weights', resume_dataset)
+        else:
+            checkpoint_name = "best_miou_checkpoint.pth.tar" if best_miou else "best_loss_checkpoint.pth.tar" 
+            checkpoint_path = os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/weights', resume_dataset, checkpoint_name)
         print("Resuming from {}".format(checkpoint_path))
 
         model_checkpoint = torch.load(checkpoint_path)  
@@ -27,7 +31,7 @@ def load_model(model, optimizer, resume_dataset=None, best_miou=False, is_cuda=F
             else:
                 model.load_state_dict(model_checkpoint['state_dict'])
                 optimizer.load_state_dict(model_checkpoint['optimizer'])
-                epoch = int(model_checkpoint['epoch'])
+                epoch = int(model_checkpoint['epoch'])+1 # we should start at the epoch right after what's checkpointed
 
             # model.load_state_dict(model_checkpoint['state_dict'])
             # optimizer.load_state_dict(model_checkpoint['optimizer'])

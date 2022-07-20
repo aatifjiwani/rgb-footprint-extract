@@ -123,6 +123,60 @@ class Trainer(object):
 
         self.model, self.optimizer, self.start_epoch = load_model(self.model, self.optimizer, args.resume, args.best_miou, args.cuda, args.gpu_ids)
 
+        # if we are resuming training
+        if args.preempt_robust and self.start_epoch > 0:
+            # check if jsonl exists -- it should, but adding this if statement as a precaution
+            jsonl_fp = os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/run', args.checkname, 'metrics.jsonl')
+            if os.path.exists(jsonl_fp):
+                # open jsonl 
+                val_metrics_historical = {'loss': [], 'mIOU': [], 'pixel_acc': [], 'f1': []}
+                train_metrics_historical = {}
+                with open(jsonl_fp, 'r') as f:
+                    for line in f:
+                        l = json.loads(line)
+                        if 'val_loss' in l:
+                            val_metrics_historical['loss'].append(l['val_loss'])
+                            val_metrics_historical['mIOU'].append(l['val_mIOU'])
+                            val_metrics_historical['pixel_acc'].append(l['val_pixel_acc'])
+                            val_metrics_historical['f1'].append(l['val_f1'])
+                        else:
+                            if l['epoch'] not in tran_metrics_historical:
+                                train_metrics_historical[l['epoch']] = {'loss': [l['train_loss']], 'mIOU': [l['mIOU']], 
+                                                                        'pixel_acc': [l['pixel_acc']], 'f1': [l['f1']]}
+                            else:
+                                train_metrics_historical[l['epoch']]['loss'].append(l['train_loss'])
+                                train_metrics_historical[l['epoch']]['mIOU'].append(l['mIOU'])
+                                train_metrics_historical[l['epoch']]['pixel_acc'].append(l['pixel_acc'])
+                                train_metrics_historical[l['epoch']]['f1'].append(l['f1'])
+
+                # assert that length of validation set is the same as start_epoch
+                assert len(val_metrics_historical['loss']) == self.start_epoch
+
+                # EDGE CASE: if pre-empted mid-way through, truncate that from the jsonl file.
+                if max(train_metrics_historical.keys()) == self.start_epoch: # this means that we have to drop the last key
+                    train_metrics_historical.pop(max(train_metrics_historical.keys()), None)
+
+                    # rewrite jsonl file
+                    # with open(jsonl_fp, 'w') as f:
+                    with(open(os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/run', args.checkname, 'metrics_test.jsonl')), 'w') as f:
+                        e = 0
+                        while e < len(val_metrics_historical['loss']): # need to think about this condition a little more
+                            for idx, element in enumerate(train_metrics_historical[e]['loss']):
+                                dic_line = {'train_loss': element, 'mIOU': train_metrics_historical[e]['mIOU'][idx], 
+                                    'pixel_acc': train_metrics_historical[e]['pixel_acc'][idx], 'f1': train_metrics_historical[e]['f1'][idx], 'epoch': e}
+                                f.write(dic_line)
+                                f.write('\n')
+
+                            # then save the val metrics
+                            dic_line = {'val_loss': val_metrics_historical['loss'][e], 'val_mIOU': val_metrics_historical['mIOU'][e], 
+                                        'val_pixel_acc': val_metrics_historical['pixel_acc'][e], 
+                                        'val_f1': val_metrics_historical['f1'][e], 'epoch': e}
+                            f.write(dic_line)
+                            f.write('\n')
+
+                            e += 1
+
+
         self.evaluator = Evaluator(self.nclass)
         self.curr_step = 0
 

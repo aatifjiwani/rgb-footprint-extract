@@ -102,6 +102,11 @@ def main():
     parser.add_argument('--bounds-kernel-size', type=int, default=3,
                         help='kernel size for calculating boundary')
 
+    # misc
+    parser.add_argument('--owner', type=str, default=None, help='N or A to indicate who\'s running')
+    parser.add_argument('--superres', action='store_true', default=False,
+                        help='whether to use the superres imagery or not')
+
     args = parser.parse_args()
     run_deeplab(args)
 
@@ -130,27 +135,44 @@ def run_deeplab(args):
         args.test_batch_size = args.batch_size
 
     if args.checkname is None:
-        if args.checkname_add is None:
-            if 'los_angeles' in args.data_root:
-                args.checkname = f'LA_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
-            elif 'san_jose' in args.data_root:
-                args.checkname = f'SJ_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
-            else:
-                args.checkname = f'{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
-        else:
-            if 'los_angeles' in args.data_root:
-                args.checkname = f'LA_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
-            elif 'san_jose' in args.data_root:
-                args.checkname = f'SJ_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
-            else:
-                args.checkname = f'{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+        dic = {'los_angeles': 'LA', 'san_jose': 'SJ'}
+
+        loc = ''
+        for k, v in dic.items():
+            if k in args.data_root:
+                loc = f'{v}_'
+
+        args.checkname = loc + f'{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}'
+
+        if args.superres:
+            args.checkname += '_superres'
+
+        if args.checkname_add is not None:
+            args.checkname += f'_{args.checkname_add}'
+
+        # if args.checkname_add is None:
+        #     if 'los_angeles' in args.data_root:
+
+        #         args.checkname = f'LA_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+        #     elif 'san_jose' in args.data_root:
+        #         args.checkname = f'SJ_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+        #     else:
+        #         args.checkname = f'{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+        # else:
+        #     if 'los_angeles' in args.data_root:
+        #         args.checkname = f'LA_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+        #     elif 'san_jose' in args.data_root:
+        #         args.checkname = f'SJ_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+        #     else:
+        #         args.checkname = f'{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
 
     if args.preempt_robust:
-        checkpoint_name = "best_miou_checkpoint.pth.tar" if args.best_miou else "best_loss_checkpoint.pth.tar" 
+        checkpoint_name = "most_recent_epoch_checkpoint.pth.tar"
         # check if checkname path exists
-        if os.path.exists(os.path.join('weights', args.checkname, checkpoint_name)):
+        if os.path.exists(os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/weights', args.checkname, checkpoint_name)):
             # if it does, resume from checkname. allows us to automatically restart our training job if slurm preempts
-            args.resume = args.checkname
+            args.resume = os.path.join(args.checkname, checkpoint_name)
+
 
     torch.manual_seed(args.seed)
     if args.inference:

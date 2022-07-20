@@ -11,8 +11,8 @@ class Saver(object):
 
     def __init__(self, args):
         self.args = args
-        self.directory = os.path.join('run', args.dataset, args.checkname)
-        self.save_directory = os.path.join('weights', args.checkname)
+        self.directory = os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/run', args.checkname)
+        self.save_directory = os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/weights', args.checkname)
         if args.use_wandb:
             wandb.login(key='442457cbcc6687d523d8e026badba7a23fe816bf')
             wandb.init(
@@ -95,6 +95,9 @@ class Saver(object):
                 torch.save(state, os.path.join(self.save_directory, 'best_miou_{}_{}'.format(wandb.run.id, filename)))
             else:
                 torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
+
+        # NEW TO SAVE LAST EPOCH
+        torch.save(state, os.path.join(self.save_directory, 'most_recent_epoch_{}'.format(filename)))
 
     def save_experiment_config(self):
         logfile = os.path.join(self.directory, 'parameters.txt')
