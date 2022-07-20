@@ -154,6 +154,8 @@ class Trainer(object):
                             times.append(l)
 
                 # assert that length of validation set is the same as start_epoch
+                print(len(val_metrics_historical['loss']))
+                print(self.start_epoch)
                 assert len(val_metrics_historical['loss']) == self.start_epoch
 
                 # EDGE CASE: if pre-empted mid-way through, truncate that from the jsonl file.
