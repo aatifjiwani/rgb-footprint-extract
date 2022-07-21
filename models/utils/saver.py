@@ -19,7 +19,8 @@ class Saver(object):
                 #entity="<entity>",
                 project="adus",
                 name=args.dataset + args.checkname,
-                config=vars(args))
+                config=vars(args),
+                resume=args.checkname)
         
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
@@ -65,7 +66,8 @@ class Saver(object):
         if self.args.use_wandb:
             if epoch:
                 metrics["epoch"] = epoch
-            wandb.log(metrics, step=step)
+            #wandb.log(metrics, step=step)
+            wandb.log(metrics)
 
     def save_metrics(self, epoch, metrics):
         with jsonlines.open(os.path.join(self.directory, "metrics.jsonl"), "a") as f:
@@ -78,13 +80,18 @@ class Saver(object):
             f.write(metrics)
             return metrics_str
 
-    def save_checkpoint(self, state, val_loss, val_miou, filename='checkpoint.pth.tar'):
+    def save_checkpoint(self, state, val_loss, val_miou, val_pixelAcc, val_f1, filename='checkpoint.pth.tar'):
         """Saves checkpoint to disk"""
         if val_loss < self.best_loss:
             print("Saving best loss checkpoint")
             self.best_loss = val_loss
             if self.args.use_wandb:
                 torch.save(state, os.path.join(self.save_directory, 'best_loss_{}_{}'.format(wandb.run.id, filename)))
+                if not self.args.best_miou:
+                    wandb.run.summary['best_val_loss'] = val_loss
+                    wandb.run.summary['best_val_miou'] = val_miou
+                    wandb.run.summary['best_val_pixelAcc'] = val_pixelAcc
+                    wandb.run.summary['best_val_f1'] = val_f1
             else:
                 torch.save(state, os.path.join(self.save_directory, 'best_loss_{}'.format(filename)))
         
@@ -93,6 +100,11 @@ class Saver(object):
             self.best_miou = val_miou
             if self.args.use_wandb:
                 torch.save(state, os.path.join(self.save_directory, 'best_miou_{}_{}'.format(wandb.run.id, filename)))
+                if self.args.best_miou:
+                    wandb.run.summary['best_val_loss'] = val_loss
+                    wandb.run.summary['best_val_miou'] = val_miou
+                    wandb.run.summary['best_val_pixelAcc'] = val_pixelAcc
+                    wandb.run.summary['best_val_f1'] = val_f1
             else:
                 torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
 
