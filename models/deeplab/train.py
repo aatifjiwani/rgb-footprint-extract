@@ -168,17 +168,17 @@ class Trainer(object):
                             for idx, element in enumerate(train_metrics_historical[e]['loss']):
                                 dic_line = {'train_loss': element, 'mIOU': train_metrics_historical[e]['mIOU'][idx], 
                                     'pixel_acc': train_metrics_historical[e]['pixel_acc'][idx], 'f1': train_metrics_historical[e]['f1'][idx], 'epoch': e}
-                                f.write(dic_line)
+                                json.dump(dic_line, f)
                                 f.write('\n')
 
-                            f.write(times[e])
+                            json.dump(times[e], f)
                             f.write('\n')
 
                             # then save the val metrics
                             dic_line = {'val_loss': val_metrics_historical['loss'][e], 'val_mIOU': val_metrics_historical['mIOU'][e], 
                                         'val_pixel_acc': val_metrics_historical['pixel_acc'][e], 
                                         'val_f1': val_metrics_historical['f1'][e], 'epoch': e}
-                            f.write(dic_line)
+                            json.dump(dic_line, f)
                             f.write('\n')
 
                             e += 1
