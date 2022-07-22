@@ -182,6 +182,33 @@ class Trainer(object):
 
                             e += 1
 
+                # Register metric history to W&B
+                if args.use_wandb:
+                    for epoch in train_metrics_historical.keys():
+                        num_steps = len(train_metrics_historical[epoch]['loss'])
+                        for step in range(num_steps):
+                            train_metrics = {
+                                "train_loss": train_metrics_historical[epoch]['loss'],
+                                "mIOU": train_metrics_historical[epoch]['mIOU'],
+                                "pixel_acc": train_metrics_historical[epoch]['pixel_acc'],
+                                "f1": train_metrics_historical[epoch]['f1']}
+                            self.saver.log_wandb(epoch=epoch, step=None, metrics=train_metrics)
+
+                    for epoch in range(len(val_metrics_historical['loss'])):
+                        # Get metrics
+                        val_metrics = {
+                            "val_loss": val_metrics_historical['loss'][epoch],
+                            "val_mIOU": val_metrics_historical['mIOU'][epoch],
+                            "val_pixel_acc": val_metrics_historical['pixel_acc'][epoch],
+                            "val_f1": val_metrics_historical['f1'][epoch]}
+
+                        # Save metrics
+                        self.saver.log_wandb(epoch=epoch, step=None, metrics=val_metrics)
+
+                        # Update run summaries
+                        self.saver.save_checkpoint(
+                            state=None, val_loss=val_metrics['val_loss'], val_miou=val_metrics['val_mIOU'],
+                            val_pixelAcc=val_metrics['val_pixel_acc'], val_f1=val_metrics['val_f1'], save=False)
 
         self.evaluator = Evaluator(self.nclass)
         self.curr_step = 0
@@ -318,7 +345,8 @@ class Trainer(object):
             'optimizer': self.optimizer.state_dict()
         }
 
-        self.saver.save_checkpoint(checkpoint, np.mean(total_loss), np.mean(total_mIOU), np.mean(total_pixelAcc), np.mean(total_f1))
+        self.saver.save_checkpoint(state=checkpoint, val_loss=np.mean(total_loss), val_miou=np.mean(total_mIOU),
+                                   val_pixelAcc=np.mean(total_pixelAcc), val_f1=np.mean(total_f1), save=True)
         # self.saver.save_checkpoint(self.model.state_dict(), np.mean(total_loss), np.mean(total_mIOU))
 
         # select random image and log it to WandB
@@ -335,8 +363,6 @@ class Trainer(object):
 
         # Log segmentations in WandB
         if self.args.use_wandb:
-            wandb.log({
-                'Predictions': wandb_imgs_list
-            })
+            wandb.log({'Predictions': wandb_imgs_list})
 
         self.curr_step += 1
