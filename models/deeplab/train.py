@@ -124,6 +124,8 @@ class Trainer(object):
 
         self.model, self.optimizer, self.start_epoch = load_model(self.model, self.optimizer, args.resume, args.best_miou, args.cuda, args.gpu_ids)
 
+        self.curr_step = 0
+
         # if we are resuming training
         if args.preempt_robust and self.start_epoch > 0:
             # check if jsonl exists -- it should, but adding this if statement as a precaution
@@ -184,34 +186,39 @@ class Trainer(object):
 
                 # Register metric history to W&B
                 if args.use_wandb:
-                    for epoch in train_metrics_historical.keys():
+                    print('[INFO] Loading train history to W&B for {} epochs'.format(len(train_metrics_historical.keys())))
+                    for epoch in range(len(train_metrics_historical.keys())):
                         num_steps = len(train_metrics_historical[epoch]['loss'])
+                        # Training
                         for step in range(num_steps):
                             train_metrics = {
-                                "train_loss": train_metrics_historical[epoch]['loss'],
-                                "mIOU": train_metrics_historical[epoch]['mIOU'],
-                                "pixel_acc": train_metrics_historical[epoch]['pixel_acc'],
-                                "f1": train_metrics_historical[epoch]['f1']}
-                            self.saver.log_wandb(epoch=epoch, step=None, metrics=train_metrics)
+                                "train_loss": train_metrics_historical[epoch]['loss'][step],
+                                "mIOU": train_metrics_historical[epoch]['mIOU'][step],
+                                "pixel_acc": train_metrics_historical[epoch]['pixel_acc'][step],
+                                "f1": train_metrics_historical[epoch]['f1'][step]}
+                            self.saver.log_wandb(epoch=epoch, step=self.curr_step, metrics=train_metrics)
+                            self.curr_step += 1
 
-                    for epoch in range(len(val_metrics_historical['loss'])):
-                        # Get metrics
+                        # Log time
+                        self.saver.log_wandb(epoch=None, step=self.curr_step, metrics={"time": times[epoch]['time']})
+
+                        # Get val metrics
                         val_metrics = {
                             "val_loss": val_metrics_historical['loss'][epoch],
                             "val_mIOU": val_metrics_historical['mIOU'][epoch],
                             "val_pixel_acc": val_metrics_historical['pixel_acc'][epoch],
                             "val_f1": val_metrics_historical['f1'][epoch]}
 
-                        # Save metrics
-                        self.saver.log_wandb(epoch=epoch, step=None, metrics=val_metrics)
+                        # Save val metrics
+                        self.saver.log_wandb(epoch=epoch, step=self.curr_step, metrics=val_metrics)
 
                         # Update run summaries
                         self.saver.save_checkpoint(
                             state=None, val_loss=val_metrics['val_loss'], val_miou=val_metrics['val_mIOU'],
                             val_pixelAcc=val_metrics['val_pixel_acc'], val_f1=val_metrics['val_f1'], save=False)
+                        self.curr_step += 1
 
         self.evaluator = Evaluator(self.nclass)
-        self.curr_step = 0
 
     def training(self, epoch):
         start_time = time.time()

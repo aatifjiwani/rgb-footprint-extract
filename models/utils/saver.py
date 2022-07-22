@@ -67,8 +67,8 @@ class Saver(object):
         if self.args.use_wandb:
             if epoch:
                 metrics["epoch"] = epoch
-            #wandb.log(metrics, step=step)
-            wandb.log(metrics)
+            wandb.log(metrics, step=step)
+            #wandb.log(metrics)
 
     def save_metrics(self, epoch, metrics):
         with jsonlines.open(os.path.join(self.directory, "metrics.jsonl"), "a") as f:
@@ -114,7 +114,8 @@ class Saver(object):
                     torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
 
         # NEW TO SAVE LAST EPOCH
-        torch.save(state, os.path.join(self.save_directory, 'most_recent_epoch_{}'.format(filename)))
+        if save:
+            torch.save(state, os.path.join(self.save_directory, 'most_recent_epoch_{}'.format(filename)))
 
     def save_experiment_config(self):
         logfile = os.path.join(self.directory, 'parameters.txt')
