@@ -7,6 +7,7 @@
 #SBATCH --time=15:00:00
 #SBATCH --mem=50GB
 #SBATCH --gres=gpu:3
+#SBATCH --dependency=afterany:58494188
 
 cd ../../
 
