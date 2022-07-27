@@ -28,19 +28,18 @@ def generate(backbone, out_stride, workers, epochs, test_batch_size, gpu_ids, re
                             for r in resume:
                                 for wi in window_size:
                                     for s in stride:
-                                        for i in input_filename:
-                                            for of in output_filename:
-                                                backbone_list.append(b)
-                                                out_stride_list.append(o)
-                                                workers_list.append(w)
-                                                epochs_list.append(e)
-                                                test_batch_size_list.append(tb)
-                                                gpu_ids_list.append(g)
-                                                resume_list.append(r)
-                                                window_size_list.append(wi)
-                                                stride_list.append(s)
-                                                input_filename_list.append(i)
-                                                output_filename_list.append(of)
+                                        for i in range(len(input_filename)):
+                                            backbone_list.append(b)
+                                            out_stride_list.append(o)
+                                            workers_list.append(w)
+                                            epochs_list.append(e)
+                                            test_batch_size_list.append(tb)
+                                            gpu_ids_list.append(g)
+                                            resume_list.append(r)
+                                            window_size_list.append(wi)
+                                            stride_list.append(s)
+                                            input_filename_list.append(input_filename[i])
+                                            output_filename_list.append(output_filename[i])
 
 
 
