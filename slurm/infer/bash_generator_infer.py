@@ -132,7 +132,7 @@ def main():
     resume = ['SJ_0.2_True_0.0001_0.0001_1.03_superresx2']
     window_size = [256]
     stride = [256]
-    input_fp = '/oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superres/train/images/'
+    input_fp = '/oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/train/images/'
     input_filename = ['m_3712150_ne_10_060_20200525_165.npy', 'm_3712141_se_10_060_20200525_126.npy', 'm_3712142_ne_10_060_20200525_63.npy',
                     'm_3712141_ne_10_060_20200525_419.npy', 'm_3712141_se_10_060_20200525_106.npy', 'm_3712142_nw_10_060_20200525_282.npy',
                     'm_3712141_se_10_060_20200525_109.npy', 'm_3712141_ne_10_060_20200525_418.npy', 'm_3712150_nw_10_060_20200525_222.npy',
