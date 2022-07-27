@@ -88,7 +88,7 @@ class Saver(object):
             self.best_loss = val_loss
             if self.args.use_wandb:
                 if save:
-                    torch.save(state, os.path.join(self.save_directory, 'best_loss_{}_{}'.format(wandb.run.id, filename)))
+                    torch.save(state, os.path.join(self.save_directory, 'best_loss_{}'.format(filename)))
                 if not self.args.best_miou:
                     wandb.run.summary['best_val_loss'] = val_loss
                     wandb.run.summary['best_val_miou'] = val_miou
@@ -103,7 +103,7 @@ class Saver(object):
             self.best_miou = val_miou
             if self.args.use_wandb:
                 if save:
-                    torch.save(state, os.path.join(self.save_directory, 'best_miou_{}_{}'.format(wandb.run.id, filename)))
+                    torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
                 if self.args.best_miou:
                     wandb.run.summary['best_val_loss'] = val_loss
                     wandb.run.summary['best_val_miou'] = val_miou

@@ -142,7 +142,7 @@ def run_deeplab(args):
             if k in args.data_root:
                 loc = f'{v}_'
 
-        args.checkname = loc + f'{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}'
+        args.checkname = loc + f'{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.batch_size}'
 
         if args.superres is not None:
             args.checkname += f'_superresx{args.superres}'
