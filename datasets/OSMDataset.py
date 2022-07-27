@@ -13,7 +13,7 @@ class OSMDataset(Dataset):
         ):
 
         self.root_dir = root_dir
-        self.inputs = list(sorted(os.listdir(f"{self.root_dir}/images/")))
+        self.inputs = list(sorted(os.listdir(f"{self.root_dir}/images_sharp/")))
         self.transforms = transforms
 
         self.generate_boundary = boundary_kernel_size is not None
@@ -25,7 +25,7 @@ class OSMDataset(Dataset):
         image_filename = self.inputs[index]
 
         # Load image
-        image = np.load(os.path.join(self.root_dir, "images", image_filename))
+        image = np.load(os.path.join(self.root_dir, "images_sharp", image_filename))
         image = torch.Tensor(image).permute(2, 0, 1)[None, :3, :, :] ##Converts to 1,C,H,W -- the NAIP imagery is RGBA, so need to index up to 3
 
         # Load masks (CHANGED NAMING OF MASK to MASK_LOSS FOR PHASE 2)
