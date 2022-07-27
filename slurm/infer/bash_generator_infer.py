@@ -100,7 +100,7 @@ def generate(backbone, out_stride, workers, epochs, test_batch_size, gpu_ids, re
 
     S += "\n"
     S += "\n"
-    command = 'singularity exec --nv $GROUP_HOME/singularity/rgb-building1.sif python run_deeplab.py --inference --backbone ' + \
+    command = 'singularity exec --nv $GROUP_HOME/singularity/rgb-building1.sif python run_deeplab.py --inference --best-miou --backbone ' + \
               '${backbone_list[$SLURM_ARRAY_TASK_ID]}' + ' --out-stride ' + '${out_stride_list[$SLURM_ARRAY_TASK_ID]}' + \
               ' --workers ' + '${workers_list[$SLURM_ARRAY_TASK_ID]}' + ' --epochs ' + '${epochs_list[$SLURM_ARRAY_TASK_ID]}' + \
               ' --gpu-ids ' + '${gpu_ids_list[$SLURM_ARRAY_TASK_ID]}'  + \
