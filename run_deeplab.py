@@ -104,7 +104,7 @@ def main():
 
     # misc
     parser.add_argument('--owner', type=str, default=None, help='N or A to indicate who\'s running')
-    parser.add_argument('--superres', action='store_true', default=False,
+    parser.add_argument('--superres', type=int, default=None,
                         help='whether to use the superres imagery or not')
 
     args = parser.parse_args()
@@ -144,8 +144,8 @@ def run_deeplab(args):
 
         args.checkname = loc + f'{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}'
 
-        if args.superres:
-            args.checkname += '_superres'
+        if args.superres is not None:
+            args.checkname += f'_superresx{args.superres}'
 
         if args.checkname_add is not None:
             args.checkname += f'_{args.checkname_add}'
