@@ -156,6 +156,8 @@ class Trainer(object):
                             times.append(l)
 
                 # assert that length of validation set is the same as start_epoch
+                print(self.start_epoch)
+                print(len(val_metrics_historical['loss']))
                 assert len(val_metrics_historical['loss']) == self.start_epoch
 
                 # EDGE CASE: if pre-empted mid-way through, truncate that from the jsonl file.
@@ -327,6 +329,15 @@ class Trainer(object):
                 total_f1.append(f1)
             else:
                 total_f1.append(0)
+
+            # ADD NEW METRIC
+            """
+            - open TIF from file name, get bounding boxes (need to convert EPSG:26911)
+            - take mask ground truth and predictions, convert to shapely/geopandas with correct coordinates
+            - separate closely connected buildings
+            - filter out predictions on roads -- would need to load in zoning shapefile with bbox of TIF
+            - filter out predictions that are way too small (by some threshold)
+            """
 
             # Log segmentation map to WandB
             if self.args.use_wandb:
