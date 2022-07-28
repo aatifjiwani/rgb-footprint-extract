@@ -156,16 +156,16 @@ class Trainer(object):
                             times.append(l)
 
                 # assert that length of validation set is the same as start_epoch
-                print(self.start_epoch)
-                print(len(val_metrics_historical['loss']))
                 assert len(val_metrics_historical['loss']) == self.start_epoch
 
                 # EDGE CASE: if pre-empted mid-way through, truncate that from the jsonl file.
                 if max(train_metrics_historical.keys()) == self.start_epoch: # this means that we have to drop the last key
                     train_metrics_historical.pop(max(train_metrics_historical.keys()), None)
 
+                    os.remove(jsonl_fp)
+
                     # rewrite jsonl file
-                    with open(jsonl_fp, 'w') as f:
+                    with open(jsonl_fp, 'w+') as f:
                         e = 0
                         while e < len(val_metrics_historical['loss']): # need to think about this condition a little more
                             for idx, element in enumerate(train_metrics_historical[e]['loss']):
