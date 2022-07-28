@@ -162,10 +162,8 @@ class Trainer(object):
                 if max(train_metrics_historical.keys()) == self.start_epoch: # this means that we have to drop the last key
                     train_metrics_historical.pop(max(train_metrics_historical.keys()), None)
 
-                    os.remove(jsonl_fp)
-
                     # rewrite jsonl file
-                    with open(jsonl_fp, 'w+') as f:
+                    with open(jsonl_fp, 'w') as f:
                         e = 0
                         while e < len(val_metrics_historical['loss']): # need to think about this condition a little more
                             for idx, element in enumerate(train_metrics_historical[e]['loss']):
@@ -198,11 +196,11 @@ class Trainer(object):
                                 "mIOU": train_metrics_historical[epoch]['mIOU'][step],
                                 "pixel_acc": train_metrics_historical[epoch]['pixel_acc'][step],
                                 "f1": train_metrics_historical[epoch]['f1'][step]}
-                            self.saver.log_wandb(epoch=epoch, step=self.curr_step, metrics=train_metrics)
+                            self.saver.log_wandb(epoch=epoch, step=self.curr_step, metrics=train_metrics, save_json=False)
                             self.curr_step += 1
 
                         # Log time
-                        self.saver.log_wandb(epoch=None, step=self.curr_step, metrics={"time": times[epoch]['time']})
+                        self.saver.log_wandb(epoch=None, step=self.curr_step, metrics={"time": times[epoch]['time']}, save_json=False)
 
                         # Get val metrics
                         val_metrics = {
@@ -212,7 +210,7 @@ class Trainer(object):
                             "val_f1": val_metrics_historical['f1'][epoch]}
 
                         # Save val metrics
-                        self.saver.log_wandb(epoch=epoch, step=self.curr_step, metrics=val_metrics)
+                        self.saver.log_wandb(epoch=epoch, step=self.curr_step, metrics=val_metrics, save_json=False)
 
                         # Update run summaries
                         self.saver.save_checkpoint(

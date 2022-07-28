@@ -61,8 +61,9 @@ class Saver(object):
         self.images += 1
 
 
-    def log_wandb(self, epoch, step, metrics):
-        self.save_metrics(epoch, metrics)
+    def log_wandb(self, epoch, step, metrics, save_json=True):
+        if save_json:
+            self.save_metrics(epoch, metrics)
 
         if self.args.use_wandb:
             if epoch:
