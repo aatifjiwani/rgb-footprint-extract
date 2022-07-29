@@ -19,7 +19,7 @@ def main():
     parser.add_argument('--out-stride', type=int, default=16,
                         help='network output stride (default: 8)')
     parser.add_argument('--dataset', type=str, default='urban3d',
-                        choices=['urban3d', 'spaceNet', 'crowdAI', 'combined', 'OSM', 'combined_naip'],
+                        choices=['urban3d', 'spaceNet', 'crowdAI', 'combined', 'OSM', 'combined_naip', 'OSM_split4'],
                         help='dataset name (default: urban3d)')
     parser.add_argument('--data-root', type=str, default='/data/',
                         help='datasets root path')
