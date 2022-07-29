@@ -34,6 +34,9 @@ def build_dataloader(dataset, data_root, boundary_ks, transforms, resize=2048, s
     elif dataset == 'OSM':
         train = OSMDataset(os.path.join(data_root, 'train'), boundary_ks, transforms)
         val = OSMDataset(os.path.join(data_root, 'val'), boundary_ks, transforms)
+    elif dataset == 'OSM_split4':
+        train = OSMDataset1(os.path.join(data_root, 'train'), boundary_ks, transforms)
+        val = OSMDataset1(os.path.join(data_root, 'val'), boundary_ks, transforms)
     elif dataset == 'combined_naip':
         train = CombinedDataset_NAIP(data_root, 'train', boundary_ks, transforms)
         val = CombinedDataset_NAIP(data_root, 'val', boundary_ks, transforms)
@@ -53,6 +56,8 @@ def build_test_dataloader(args, transforms):
         return NumpyDataset(args.input_filename, args.window_size, args.stride, transforms)
     elif args.dataset == 'OSM':
         return OSMDataset(os.path.join(args.data_root, 'test'), None, transforms)
+    elif args.dataset == 'OSM_split4':
+        return OSMDataset1(os.path.join(args.data_root, 'test'), None, transforms)
     elif args.dataset == 'combined_naip':
         train = CombinedDataset_NAIP(data_root, 'test', None, transforms)
     else:
