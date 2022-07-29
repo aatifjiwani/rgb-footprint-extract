@@ -73,6 +73,8 @@ class SegmentationLosses(object):
         #     w.write(f'loss_weights min: {loss_weights.min()}\n')
 
         weights_exp = torch.exp(weights) ** 2 # [0 - 1] --> [1 e**3=20]
+        print(weights_exp.size())
+        print(logits_log_probs.size())
         assert weights_exp.size() == logits_log_probs.size()
 
         # THIS IS WHERE I PROBABLY MULTIPLY THE WEIGHTS
