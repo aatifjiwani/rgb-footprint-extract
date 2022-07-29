@@ -4,6 +4,7 @@ from .SpaceNetDataset import SpaceNetDataset
 from .CombinedDataset import CombinedDataset
 from .NumpyDataset import NumpyDataset
 from .OSMDataset import OSMDataset
+from .OSMDataset1 import OSMDataset1
 from .CombinedDataset_NAIP import CombinedDataset_NAIP
 import os
 
