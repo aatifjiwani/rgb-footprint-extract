@@ -73,13 +73,21 @@ class OSMDataset1(Dataset):
 
         # Generate boundary if specified
         if self.generate_boundary:
-            mask_wt = self.process_boundary(image_filename)
+            mask_wt = self.process_boundary(image_filename, segment)
             batch['boundary'] = mask_wt
         
         return batch
 
-    def process_boundary(self, image_filename):
+    def process_boundary(self, image_filename, segment):
         mask_wt = np.load(os.path.join(self.root_dir, "masks_wt", image_filename.replace(".npy", "_mask_wt.npy")))
+        if segment == 0:
+            mask_wt = mask_wt[:1024, :1024]
+        elif segment == 1:
+            mask_wt = mask_wt[:1024, 1024:]
+        elif segment == 2:
+            mask_wt = mask_wt[1024:, :1024]
+        elif segment == 3:
+            mask_wt = mask_wt[1024:, 1024:]
         maskwt_tensor = torch.tensor(mask_wt.astype(float))
 
         # Convert mask weights to a scale of 0 - 1
