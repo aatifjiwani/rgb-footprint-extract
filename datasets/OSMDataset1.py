@@ -4,7 +4,7 @@ import torch
 
 from torch.utils.data import Dataset
 
-class OSMDataset(Dataset):
+class OSMDataset1(Dataset):
     def __init__(
         self, 
         root_dir, 
@@ -26,33 +26,34 @@ class OSMDataset(Dataset):
         image_filename = self.inputs[index].split('__')[0]
         segment = int(self.inputs[index].split('__')[1])
 
-        splice = None
-        splice_mask = None
-        if segment == 0:
-            splice = [None, :3, :1024, :1024]
-            splice_mask = [None, None, :1024, :1024]
-        elif segment == 1:
-            splice = [None, :3, :1024, 1024:]
-            splice_mask = [None, None, :1024, 1024:]
-        elif segment == 2:
-            splice = [None, :3, 1024:, :1024]
-            splice_mask = [None, None, 1024:, :1024]
-        elif segment == 3:
-            splice = [None, :3, 1024:, 1024:]
-            splice_mask = [None, None, 1024:, 1024:]
-
         # Load image
+        image = None
+        mask_loss = None
         image = np.load(os.path.join(self.root_dir, "images", image_filename))
-        image = torch.Tensor(image).permute(2, 0, 1)splice ##Converts to 1,C,H,W -- the NAIP imagery is RGBA, so need to index up to 3
+        mask_loss = np.load(os.path.join(self.root_dir, "masks", image_filename.replace(".npy", "_mask.npy")))
+        if segment == 0:
+            image = image[:1024, :1024, :]
+            mask_loss = mask_loss[:1024, :1024]
+        elif segment == 1:
+            image = image[:1024, 1024:, :]
+            mask_loss = mask_loss[:1024, 1024:]
+        elif segment == 2:
+            image = image[1024:, :1024, :]
+            mask_loss = mask_loss[1024:, :1024]
+        elif segment == 3:
+            image = image[1024:, 1024:, :]
+            mask_loss = mask_loss[1024:, 1024:]
+
+
+        image = torch.Tensor(image).permute(2, 0, 1)[None, :, :, :] ##Converts to 1,C,H,W -- the NAIP imagery is RGBA, so need to index up to 3
 
         # Load masks (CHANGED NAMING OF MASK to MASK_LOSS FOR PHASE 2)
-        mask_loss = np.load(os.path.join(self.root_dir, "masks", image_filename.replace(".npy", "_mask.npy")))
         mask = (mask_loss > 0).astype(np.int32)
-        mask = torch.Tensor(mask)splice_mask ##1, 1, H, W
+        mask = torch.Tensor(mask)[None, None, :, :] ##1, 1, H, W
 
         # EXCLUSIVE TO PHASE 2: Include loss weights
         # We pass in raw mask_loss but we will process this in loss.py
-        mask_loss = torch.Tensor(mask_loss)splice_mask
+        mask_loss = torch.Tensor(mask_loss)[None, None, :, :]
 
         # Apply transforms if any
         if self.transforms is not None:
