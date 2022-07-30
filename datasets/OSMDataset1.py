@@ -27,8 +27,6 @@ class OSMDataset1(Dataset):
         segment = int(self.inputs[index].split('__')[1])
 
         # Load image
-        image = None
-        mask_loss = None
         image = np.load(os.path.join(self.root_dir, "images", image_filename))
         mask_loss = np.load(os.path.join(self.root_dir, "masks", image_filename.replace(".npy", "_mask.npy")))
         if segment == 0:
@@ -43,6 +41,27 @@ class OSMDataset1(Dataset):
         elif segment == 3:
             image = image[1024:, 1024:, :]
             mask_loss = mask_loss[1024:, 1024:]
+
+        # this protects us from getting an image segment with no footprints (leading to NAs)
+        while mask_loss.sum() == 0:
+            # randomly select segment
+            segment = np.random.randint(4)
+
+            image = np.load(os.path.join(self.root_dir, "images", image_filename))
+            mask_loss = np.load(os.path.join(self.root_dir, "masks", image_filename.replace(".npy", "_mask.npy")))
+
+            if segment == 0:
+                image = image[:1024, :1024, :]
+                mask_loss = mask_loss[:1024, :1024]
+            elif segment == 1:
+                image = image[:1024, 1024:, :]
+                mask_loss = mask_loss[:1024, 1024:]
+            elif segment == 2:
+                image = image[1024:, :1024, :]
+                mask_loss = mask_loss[1024:, :1024]
+            elif segment == 3:
+                image = image[1024:, 1024:, :]
+                mask_loss = mask_loss[1024:, 1024:]
 
 
         image = torch.Tensor(image).permute(2, 0, 1)[None, :, :, :] ##Converts to 1,C,H,W -- the NAIP imagery is RGBA, so need to index up to 3
