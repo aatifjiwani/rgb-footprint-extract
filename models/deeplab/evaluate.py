@@ -23,9 +23,9 @@ class Tester(object):
     def __init__(self, args):
         self.args = args
 
-        # Define Saver
-        self.saver = Saver(args)
-        self.saver.save_experiment_config()
+        # Define Saver -- Commented this out because we never need to log saves
+        # self.saver = Saver(args)
+        # self.saver.save_experiment_config()
         
         # Define Dataloader. Also, define any transforms here
         test_dataset = build_test_dataloader(args, transforms=None)

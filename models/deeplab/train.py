@@ -196,11 +196,11 @@ class Trainer(object):
                                 "mIOU": train_metrics_historical[epoch]['mIOU'][step],
                                 "pixel_acc": train_metrics_historical[epoch]['pixel_acc'][step],
                                 "f1": train_metrics_historical[epoch]['f1'][step]}
-                            self.saver.log_wandb(epoch=epoch, step=self.curr_step, metrics=train_metrics)
+                            self.saver.log_wandb(epoch=epoch, step=self.curr_step, metrics=train_metrics, save_json=False)
                             self.curr_step += 1
 
                         # Log time
-                        self.saver.log_wandb(epoch=None, step=self.curr_step, metrics={"time": times[epoch]['time']})
+                        self.saver.log_wandb(epoch=None, step=self.curr_step, metrics={"time": times[epoch]['time']}, save_json=False)
 
                         # Get val metrics
                         val_metrics = {
@@ -210,7 +210,7 @@ class Trainer(object):
                             "val_f1": val_metrics_historical['f1'][epoch]}
 
                         # Save val metrics
-                        self.saver.log_wandb(epoch=epoch, step=self.curr_step, metrics=val_metrics)
+                        self.saver.log_wandb(epoch=epoch, step=self.curr_step, metrics=val_metrics, save_json=False)
 
                         # Update run summaries
                         self.saver.save_checkpoint(
@@ -327,6 +327,15 @@ class Trainer(object):
                 total_f1.append(f1)
             else:
                 total_f1.append(0)
+
+            # ADD NEW METRIC
+            """
+            - open TIF from file name, get bounding boxes (need to convert EPSG:26911)
+            - take mask ground truth and predictions, convert to shapely/geopandas with correct coordinates
+            - separate closely connected buildings
+            - filter out predictions on roads -- would need to load in zoning shapefile with bbox of TIF
+            - filter out predictions that are way too small (by some threshold)
+            """
 
             # Log segmentation map to WandB
             if self.args.use_wandb:
