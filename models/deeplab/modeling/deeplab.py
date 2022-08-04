@@ -73,4 +73,44 @@ class DeepLab(nn.Module):
                             if p.requires_grad:
                                 yield p
 
+    def get_final_lr_params(self):
+        for name, module in self.decoder.named_modules():
+            if 'last_conv' in name:
+                if self.freeze_bn:
+                    if isinstance(module, nn.Conv2d):
+                        for p in module.parameters():
+                            if p.requires_grad:
+                                yield p
+                else:
+                    if isinstance(module, nn.Conv2d) or isinstance(module, SynchronizedBatchNorm2d) \
+                            or isinstance(module, nn.BatchNorm2d):
+                        for p in module.parameters():
+                            if p.requires_grad:
+                                yield p
 
+    def get_0x_lr_params(self):
+        modules = [self.backbone, self.aspp]
+        for i in range(len(modules)):
+            for m in modules[i].named_modules():
+                for p in m[1].parameters():
+                    if p.requires_grad:
+                        yield p
+        
+        for name, module in self.decoder.named_modules():
+            # if 'last_conv' not in name and name != '':
+            #     print(name)
+            #     print(module)
+            #     for p in module.parameters():
+            #         if p.requires_grad:
+            #             yield p
+
+            if 'last_conv' in name:
+                if self.freeze_bn:
+                    if isinstance(module, SynchronizedBatchNorm2d) or isinstance(module, nn.BatchNorm2d):
+                        for p in module.parameters():
+                            if p.requires_grad:
+                                yield p
+            elif 'last_conv' not in name and name != '':
+                for p in module.parameters():
+                    if p.requires_grad:
+                        yield p

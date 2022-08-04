@@ -19,7 +19,7 @@ def main():
     parser.add_argument('--out-stride', type=int, default=16,
                         help='network output stride (default: 8)')
     parser.add_argument('--dataset', type=str, default='urban3d',
-                        choices=['urban3d', 'spaceNet', 'crowdAI', 'combined'],
+                        choices=['urban3d', 'spaceNet', 'crowdAI', 'combined', 'OSM', 'combined_naip', 'OSM_split4'],
                         help='dataset name (default: urban3d)')
     parser.add_argument('--data-root', type=str, default='/data/',
                         help='datasets root path')
@@ -27,7 +27,7 @@ def main():
                         metavar='N', help='dataloader threads')
     parser.add_argument('--sync-bn', type=bool, default=None,
                         help='whether to use sync bn (default: auto)')
-    parser.add_argument('--freeze-bn', type=bool, default=False,
+    parser.add_argument('--freeze-bn', action='store_true', default=False,
                         help='whether to freeze bn parameters (default: False)')
     parser.add_argument('--loss-type', type=str, default='ce_dice',
                         choices=['ce', 'ce_dice', 'wce_dice'],
@@ -39,6 +39,9 @@ def main():
                         help='number of classes to predict (2 for binary mask)')
     parser.add_argument('--dropout', type=float, nargs="+", default=[0.1, 0.5], 
                     help='dropout values')
+    parser.add_argument('--preempt-robust', action='store_true', default=False,
+                    help='True if you want the model to find the latest checkpoint before loading in \
+                    resume checkpoint. Helpful when SLURM pre-empts and stops the job and you don\'t want to restart from scratch')
 
     # training hyper params
     parser.add_argument('--epochs', type=int, default=None, metavar='N',
@@ -53,6 +56,8 @@ def main():
                                 testing (default: auto)')
     parser.add_argument('--lr', type=float, default=0.0001, metavar='LR',
                         help='learning rate (default: auto)')
+    parser.add_argument('--loss-weights-param', type=float, default=1.01,
+                        help='base of exponential function in defining loss weights')
     # optimizer params
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')
@@ -71,6 +76,8 @@ def main():
                         help='random seed (default: 1)')
     # name
     parser.add_argument('--checkname', type=str, default=None,
+                        help='set the checkpoint name')
+    parser.add_argument('--checkname-add', type=str, default=None,
                         help='set the checkpoint name')
 
     # evaluation option
@@ -94,6 +101,11 @@ def main():
                         help='includes boundaries of masks in loss function')
     parser.add_argument('--bounds-kernel-size', type=int, default=3,
                         help='kernel size for calculating boundary')
+
+    # misc
+    parser.add_argument('--owner', type=str, default=None, help='N or A to indicate who\'s running')
+    parser.add_argument('--superres', type=int, default=None,
+                        help='whether to use the superres imagery or not')
 
     args = parser.parse_args()
     run_deeplab(args)
@@ -123,7 +135,44 @@ def run_deeplab(args):
         args.test_batch_size = args.batch_size
 
     if args.checkname is None:
-        args.checkname = 'deeplab-'+str(args.backbone)
+        dic = {'los_angeles': 'LA', 'san_jose': 'SJ'}
+
+        loc = ''
+        for k, v in dic.items():
+            if k in args.data_root:
+                loc = f'{v}_'
+
+        args.checkname = loc + f'{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.batch_size}'
+
+        if args.superres is not None:
+            args.checkname += f'_superresx{args.superres}'
+
+        if args.checkname_add is not None:
+            args.checkname += f'_{args.checkname_add}'
+
+        # if args.checkname_add is None:
+        #     if 'los_angeles' in args.data_root:
+
+        #         args.checkname = f'LA_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+        #     elif 'san_jose' in args.data_root:
+        #         args.checkname = f'SJ_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+        #     else:
+        #         args.checkname = f'{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+        # else:
+        #     if 'los_angeles' in args.data_root:
+        #         args.checkname = f'LA_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+        #     elif 'san_jose' in args.data_root:
+        #         args.checkname = f'SJ_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+        #     else:
+        #         args.checkname = f'{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+
+    if args.preempt_robust:
+        checkpoint_name = "most_recent_epoch_checkpoint.pth.tar"
+        # check if checkname path exists
+        if os.path.exists(os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/weights', args.checkname, checkpoint_name)):
+            # if it does, resume from checkname. allows us to automatically restart our training job if slurm preempts
+            args.resume = os.path.join(args.checkname, checkpoint_name)
+
 
     torch.manual_seed(args.seed)
     if args.inference:
@@ -171,9 +220,11 @@ def handle_training(args):
 
     print("Learning rate: {}; L2 factor: {}".format(args.lr, args.weight_decay))
     print("Experiment {} instantiated. Training starting...".format(args.checkname))
+    # NEW
+    print("Starting from epoch {}".format(trainer.start_epoch))
     print("Training for {} epochs".format(trainer.args.epochs))
     print("Batch size: {}; Test Batch Size: {}".format(args.batch_size, args.test_batch_size))
-    for epoch in range(trainer.args.start_epoch, trainer.args.epochs):
+    for epoch in range(trainer.start_epoch, trainer.start_epoch+trainer.args.epochs):
         trainer.training(epoch)
         if not trainer.args.no_val:
             trainer.validation(epoch)

@@ -3,6 +3,9 @@ from .Urban3dDataset import Urban3dDataset
 from .SpaceNetDataset import SpaceNetDataset
 from .CombinedDataset import CombinedDataset
 from .NumpyDataset import NumpyDataset
+from .OSMDataset import OSMDataset
+from .OSMDataset1 import OSMDataset1
+from .CombinedDataset_NAIP import CombinedDataset_NAIP
 import os
 
 
@@ -29,6 +32,15 @@ def build_dataloader(dataset, data_root, boundary_ks, transforms, resize=2048, s
     elif dataset == "combined":
         train = CombinedDataset(data_root, boundary=(boundary_ks is not None))
         val = CombinedDataset(data_root, boundary=(boundary_ks is not None), train=False)
+    elif dataset == 'OSM':
+        train = OSMDataset(os.path.join(data_root, 'train'), boundary_ks, transforms)
+        val = OSMDataset(os.path.join(data_root, 'val'), boundary_ks, transforms)
+    elif dataset == 'OSM_split4':
+        train = OSMDataset1(os.path.join(data_root, 'train'), boundary_ks, transforms)
+        val = OSMDataset1(os.path.join(data_root, 'val'), boundary_ks, transforms)
+    elif dataset == 'combined_naip':
+        train = CombinedDataset_NAIP(data_root, 'train', boundary_ks, transforms)
+        val = CombinedDataset_NAIP(data_root, 'val', boundary_ks, transforms)
     else:
         raise NotImplementedError()
 
@@ -43,5 +55,11 @@ def build_test_dataloader(args, transforms):
         return CrowdAIDataset(os.path.join(args.data_root, "AICrowd/test"), None, transforms)
     elif args.dataset == "numpy":
         return NumpyDataset(args.input_filename, args.window_size, args.stride, transforms)
+    elif args.dataset == 'OSM':
+        return OSMDataset(os.path.join(args.data_root, 'test'), None, transforms)
+    elif args.dataset == 'OSM_split4':
+        return OSMDataset1(os.path.join(args.data_root, 'test'), None, transforms)
+    elif args.dataset == 'combined_naip':
+        train = CombinedDataset_NAIP(data_root, 'test', None, transforms)
     else:
         raise NotImplementedError()
