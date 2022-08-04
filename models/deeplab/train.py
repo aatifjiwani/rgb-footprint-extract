@@ -16,7 +16,8 @@ from models.deeplab.modeling.deeplab import *
 from models.utils.loss_p2 import SegmentationLosses
 from models.utils.loader import load_model
 from models.utils.saver import Saver
-from models.utils.metrics import Evaluator
+from models.utils.metrics import Evaluator, SEPARATION_BUFFER, SMALL_AREA_THRESHOLD
+from models.utils.metrics import LARGE_AREA_THRESHOLD, ROAD_BUFFER, SMALL_BUILDING_BUFFERS
 from models.utils.collate_fn import generate_split_collate_fn, handle_concatenation
 from models.utils.custom_transforms import tensor_resize
 from models.utils.wandb_utils import *
@@ -132,9 +133,13 @@ class Trainer(object):
             jsonl_fp = os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/run', args.checkname, 'metrics.jsonl')
             if os.path.exists(jsonl_fp):
                 # open jsonl 
-                val_metrics_historical = {'loss': [], 'mIOU': [], 'pixel_acc': [], 'f1': []}
+                val_metrics_historical = {'loss': [], 'mIOU': [], 'pixel_acc': [], 'f1': [], 'mIoU-SB': []}
+                for buffer in SMALL_BUILDING_BUFFERS:
+                    val_metrics_historical['SmIoU-V1-{}'.format(buffer)] = []
+                    val_metrics_historical['SmIoU-V2-{}'.format(buffer)] = []
                 train_metrics_historical = {}
                 times = []
+
                 with open(jsonl_fp, 'r') as f:
                     for line in f:
                         l = json.loads(line)
@@ -143,6 +148,14 @@ class Trainer(object):
                             val_metrics_historical['mIOU'].append(l['val_mIOU'])
                             val_metrics_historical['pixel_acc'].append(l['val_pixel_acc'])
                             val_metrics_historical['f1'].append(l['val_f1'])
+                            if 'mIOU-SB' in l:
+                                val_metrics_historical['mIOU-SB'].append(l['mIOU-SB'])
+                                for buffer in SMALL_BUILDING_BUFFERS:
+                                    val_metrics_historical['SmIoU-V1-{}'.format(buffer)].append(
+                                        l['SmIoU-V1-{}'.format(buffer)])
+                                    val_metrics_historical['SmIoU-V2-{}'.format(buffer)].append(
+                                        l['SmIoU-V2-{}'.format(buffer)])
+
                         elif 'train_loss' in l:
                             if l['epoch'] not in train_metrics_historical:
                                 train_metrics_historical[l['epoch']] = {'loss': [l['train_loss']], 'mIOU': [l['mIOU']], 
@@ -179,6 +192,13 @@ class Trainer(object):
                             dic_line = {'val_loss': val_metrics_historical['loss'][e], 'val_mIOU': val_metrics_historical['mIOU'][e], 
                                         'val_pixel_acc': val_metrics_historical['pixel_acc'][e], 
                                         'val_f1': val_metrics_historical['f1'][e], 'epoch': e}
+                            if 'mIOU-SB' in val_metrics_historical.keys():
+                                dic_line['mIOU-SB'] = val_metrics_historical['mIOU-SB'][e]
+                                for buffer in SMALL_BUILDING_BUFFERS:
+                                    dic_line['SmIoU-V1-{}'.format(buffer)] = \
+                                        val_metrics_historical['SmIoU-V1-{}'.format(buffer)][e]
+                                    dic_line['SmIoU-V2-{}'.format(buffer)] = \
+                                        val_metrics_historical['SmIoU-V2-{}'.format(buffer)][e]
                             json.dump(dic_line, f)
                             f.write('\n')
 
@@ -208,14 +228,20 @@ class Trainer(object):
                             "val_mIOU": val_metrics_historical['mIOU'][epoch],
                             "val_pixel_acc": val_metrics_historical['pixel_acc'][epoch],
                             "val_f1": val_metrics_historical['f1'][epoch]}
+                        if 'mIOU-SB' in val_metrics_historical.keys():
+                            val_metrics['mIOU-SB'] = val_metrics_historical['mIOU-SB'][epoch]
+                            for buffer in SMALL_BUILDING_BUFFERS:
+                                val_metrics['SmIoU-V1-{}'.format(buffer)] = \
+                                    val_metrics_historical['SmIoU-V1-{}'.format(buffer)][epoch]
+                                val_metrics['SmIoU-V2-{}'.format(buffer)] = \
+                                    val_metrics_historical['SmIoU-V2-{}'.format(buffer)][epoch]
 
                         # Save val metrics
                         self.saver.log_wandb(epoch=epoch, step=self.curr_step, metrics=val_metrics, save_json=False)
 
                         # Update run summaries
                         self.saver.save_checkpoint(
-                            state=None, val_loss=val_metrics['val_loss'], val_miou=val_metrics['val_mIOU'],
-                            val_pixelAcc=val_metrics['val_pixel_acc'], val_f1=val_metrics['val_f1'], save=False)
+                            state=None, val_metric_dict=val_metrics, save=False)
                         self.curr_step += 1
 
         self.evaluator = Evaluator(self.nclass)
@@ -288,6 +314,11 @@ class Trainer(object):
         total_mIOU = []
         total_f1 = []
 
+        # New metrics
+        total_mIoU_SB = []
+        total_SmIoU_V1 = {buffer: [] for buffer in SMALL_BUILDING_BUFFERS}
+        total_SmIoU_V2 = {buffer: [] for buffer in SMALL_BUILDING_BUFFERS}
+
         if self.args.use_wandb:
             wandb_imgs_list = []
 
@@ -328,14 +359,18 @@ class Trainer(object):
             else:
                 total_f1.append(0)
 
-            # ADD NEW METRIC
-            """
-            - open TIF from file name, get bounding boxes (need to convert EPSG:26911)
-            - take mask ground truth and predictions, convert to shapely/geopandas with correct coordinates
-            - separate closely connected buildings
-            - filter out predictions on roads -- would need to load in zoning shapefile with bbox of TIF
-            - filter out predictions that are way too small (by some threshold)
-            """
+            # New metrics for small buildings
+            smiou_dict = self.evaluator.SmIOU(
+                gt_image=target, pred_image=pred, file_name=names,
+                pad_buffers=SMALL_BUILDING_BUFFERS, buffer_val=SEPARATION_BUFFER,
+                small_area_thresh=SMALL_AREA_THRESHOLD,
+                large_area_thresh=LARGE_AREA_THRESHOLD,
+                road_buffer=ROAD_BUFFER)
+
+            total_mIoU_SB.append(smiou_dict['mIoU-SB'])
+            for buffer in SMALL_BUILDING_BUFFERS:
+                total_SmIoU_V1[buffer].append(smiou_dict['SmIoU-V1-{}'.format(buffer)])
+                total_SmIoU_V2[buffer].append(smiou_dict['SmIoU-V2-{}'.format(buffer)])
 
             # Log segmentation map to WandB
             if self.args.use_wandb:
@@ -347,22 +382,27 @@ class Trainer(object):
                         class_labels={0: 'bg', 1: 'building'})
                 )
 
-                
-        self.saver.log_wandb(epoch, self.curr_step, {
-                                                        "val_loss": np.mean(total_loss),
-                                                        "val_mIOU": np.mean(total_mIOU),
-                                                        "val_pixel_acc": np.mean(total_pixelAcc),
-                                                        "val_f1": np.mean(total_f1),
-                                                    })
+        # Log validation metrics
+        val_metric_dict = {
+            "val_loss": np.mean(total_loss),
+            "val_mIOU": np.mean(total_mIOU),
+            "val_pixel_acc": np.mean(total_pixelAcc),
+            "val_f1": np.mean(total_f1),
+            'val_mIoU-SB': np.mean(total_mIoU_SB)}
+        for buffer in SMALL_BUILDING_BUFFERS:
+            val_metric_dict['val_SmIoU-V1-{}'.format(buffer)] = np.mean(total_SmIoU_V1[buffer])
+            val_metric_dict['val_SmIoU-V2-{}'.format(buffer)] = np.mean(total_SmIoU_V2[buffer])
+        self.saver.log_wandb(epoch, self.curr_step, val_metric_dict)
 
+        # Save checkpoint
         checkpoint = {
             'epoch': epoch + 1,
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict()
         }
 
-        self.saver.save_checkpoint(state=checkpoint, val_loss=np.mean(total_loss), val_miou=np.mean(total_mIOU),
-                                   val_pixelAcc=np.mean(total_pixelAcc), val_f1=np.mean(total_f1), save=True)
+        self.saver.save_checkpoint(
+            state=checkpoint, val_metric_dict=val_metric_dict, save=True)
         # self.saver.save_checkpoint(self.model.state_dict(), np.mean(total_loss), np.mean(total_mIOU))
 
         # select random image and log it to WandB

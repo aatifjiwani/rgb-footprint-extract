@@ -7,6 +7,10 @@ import jsonlines
 import wandb
 import matplotlib
 import matplotlib.pyplot as plt
+
+from models.utils.metrics import SMALL_BUILDING_BUFFERS
+
+
 class Saver(object):
 
     def __init__(self, args):
@@ -32,6 +36,10 @@ class Saver(object):
         self.images = 0
         self.best_loss = float('inf')
         self.best_miou = float('-inf')
+        self.best_new_metrics = {'mIoU-SB': float('-inf')}
+        for buffer in SMALL_BUILDING_BUFFERS:
+            self.best_new_metrics['SmIoU-V1-{}'.format(buffer)] = float('-inf')
+            self.best_new_metrics['SmIoU-V2-{}'.format(buffer)] = float('-inf')
 
     def plot_and_save_image(self, filename, input_type, image_array):
         try:
@@ -60,7 +68,6 @@ class Saver(object):
 
         self.images += 1
 
-
     def log_wandb(self, epoch, step, metrics, save_json=True):
         if save_json:
             self.save_metrics(epoch, metrics)
@@ -82,37 +89,36 @@ class Saver(object):
             f.write(metrics)
             return metrics_str
 
-    def save_checkpoint(self, state, val_loss, val_miou, val_pixelAcc, val_f1, filename='checkpoint.pth.tar', save=True):
+    def save_checkpoint(self, state, val_metric_dict, filename='checkpoint.pth.tar', save=True):
         """Saves checkpoint to disk and udpates W&B summaries"""
-        if val_loss < self.best_loss:
+        if val_metric_dict['val_loss'] < self.best_loss:
             print("Saving best loss checkpoint")
-            self.best_loss = val_loss
-            if self.args.use_wandb:
-                if save:
-                    torch.save(state, os.path.join(self.save_directory, 'best_loss_{}'.format(filename)))
-                if not self.args.best_miou:
-                    wandb.run.summary['best_val_loss'] = val_loss
-                    wandb.run.summary['best_val_miou'] = val_miou
-                    wandb.run.summary['best_val_pixelAcc'] = val_pixelAcc
-                    wandb.run.summary['best_val_f1'] = val_f1
-            else:
-                if save:
-                    torch.save(state, os.path.join(self.save_directory, 'best_loss_{}'.format(filename)))
-        
-        if val_miou > self.best_miou:
+            self.best_loss = val_metric_dict['val_loss']
+
+            if save:
+                torch.save(state, os.path.join(self.save_directory, 'best_loss_{}'.format(filename)))
+            if self.args.use_wandb and not self.args.best_miou:
+                for val_key, val_value in val_metric_dict:
+                    wandb.run.summary['best_{}'.format(val_key)] = val_value
+
+        if val_metric_dict['val_miou'] > self.best_miou:
             print("Saving best mIOU checkpoint")
-            self.best_miou = val_miou
-            if self.args.use_wandb:
+            self.best_miou = val_metric_dict['val_miou']
+
+            if save:
+                torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
+            if self.args.use_wandb and self.args.best_miou:
+                for val_key, val_value in val_metric_dict:
+                    wandb.run.summary['best_{}'.format(val_key)] = val_value
+
+        # Checkpoint based on new metrics
+        for metric in self.best_new_metrics.keys():
+            if val_metric_dict[metric] > self.best_new_metrics[metric]:
+                print("Saving best {} checkpoint".format(metric))
+                self.best_new_metrics[metric] = val_metric_dict[metric]
+
                 if save:
-                    torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
-                if self.args.best_miou:
-                    wandb.run.summary['best_val_loss'] = val_loss
-                    wandb.run.summary['best_val_miou'] = val_miou
-                    wandb.run.summary['best_val_pixelAcc'] = val_pixelAcc
-                    wandb.run.summary['best_val_f1'] = val_f1
-            else:
-                if save:
-                    torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
+                    torch.save(state, os.path.join(self.save_directory, 'best_{}_{}'.format(metric, filename)))
 
         # NEW TO SAVE LAST EPOCH
         if save:
