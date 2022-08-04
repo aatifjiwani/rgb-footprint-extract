@@ -1,5 +1,5 @@
 import numpy as np
-import postprocessing
+import models.utils.postprocessing as postprocessing
 
 
 # Parameters for new metrics
@@ -7,7 +7,7 @@ SEPARATION_BUFFER = 2
 SMALL_AREA_THRESHOLD = 15
 LARGE_AREA_THRESHOLD = 160
 ROAD_BUFFER = -5
-SMALL_BUILDING_BUFFERS = [1, 3, 8]
+SMALL_BUILDING_BUFFERS = [1, 3, 5, 8, 10]
 
 
 class Evaluator(object):
