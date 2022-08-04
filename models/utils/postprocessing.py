@@ -266,7 +266,7 @@ def generate_metric_mask(
         small_build_gt_gpd = filter_buildings_area(
             buildings_gpd=small_build_gt_gpd, area_thresh=large_area_thresh, larger_than=False)
         small_build_gt_np = get_nparray_from_gpd(
-            small_build_gt_gpd, file_name, build_pred.shape[1])
+            small_build_gt_gpd, file_name[i], build_pred.shape[1])
 
         # * Get predicted small buildings
         small_build_pred_np = get_pred_small_buildings(

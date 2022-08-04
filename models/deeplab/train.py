@@ -361,7 +361,7 @@ class Trainer(object):
 
             # New metrics for small buildings
             smiou_dict = self.evaluator.SmIOU(
-                gt_image=target, pred_image=pred, file_name=names,
+                gt_image=target, pred_image=pred, file_name=names[0],
                 pad_buffers=SMALL_BUILDING_BUFFERS, buffer_val=SEPARATION_BUFFER,
                 small_area_thresh=SMALL_AREA_THRESHOLD,
                 large_area_thresh=LARGE_AREA_THRESHOLD,
