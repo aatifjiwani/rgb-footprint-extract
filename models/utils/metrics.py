@@ -1,5 +1,5 @@
 import numpy as np
-import postprocessing
+import models.utils.postprocessing as postprocessing
 
 
 # Parameters for new metrics
