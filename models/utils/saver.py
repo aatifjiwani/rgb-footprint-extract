@@ -101,9 +101,9 @@ class Saver(object):
                 for val_key, val_value in val_metric_dict:
                     wandb.run.summary['best_{}'.format(val_key)] = val_value
 
-        if val_metric_dict['val_miou'] > self.best_miou:
+        if val_metric_dict['val_mIOU'] > self.best_miou:
             print("Saving best mIOU checkpoint")
-            self.best_miou = val_metric_dict['val_miou']
+            self.best_miou = val_metric_dict['val_mIOU']
 
             if save:
                 torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
