@@ -148,7 +148,7 @@ class Trainer(object):
                             val_metrics_historical['mIOU'].append(l['val_mIOU'])
                             val_metrics_historical['pixel_acc'].append(l['val_pixel_acc'])
                             val_metrics_historical['f1'].append(l['val_f1'])
-                            if 'mIOU-SB' in l:
+                            if 'val_mIOU-SB' in l:
                                 val_metrics_historical['mIOU-SB'].append(l['val_mIOU-SB'])
                                 for buffer in SMALL_BUILDING_BUFFERS:
                                     val_metrics_historical['SmIoU-V1-{}'.format(buffer)].append(

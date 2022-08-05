@@ -112,13 +112,14 @@ class Saver(object):
                     wandb.run.summary['best_{}'.format(val_key)] = val_value
 
         # Checkpoint based on new metrics
-        for metric in self.best_new_metrics.keys():
-            if val_metric_dict[metric] > self.best_new_metrics[metric]:
-                print("Saving best {} checkpoint".format(metric))
-                self.best_new_metrics[metric] = val_metric_dict[metric]
+        if 'val_mIoU-SB' in val_metric_dict.keys():
+            for metric in self.best_new_metrics.keys():
+                if val_metric_dict[metric] > self.best_new_metrics[metric]:
+                    print("Saving best {} checkpoint".format(metric))
+                    self.best_new_metrics[metric] = val_metric_dict[metric]
 
-                if save:
-                    torch.save(state, os.path.join(self.save_directory, 'best_{}_{}'.format(metric, filename)))
+                    if save:
+                        torch.save(state, os.path.join(self.save_directory, 'best_{}_{}'.format(metric, filename)))
 
         # NEW TO SAVE LAST EPOCH
         if save:
