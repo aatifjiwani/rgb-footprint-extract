@@ -108,7 +108,7 @@ class Saver(object):
             if save:
                 torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
             if self.args.use_wandb and self.args.best_miou:
-                for val_key, val_value in val_metric_dict:
+                for val_key, val_value in val_metric_dict.items():
                     wandb.run.summary['best_{}'.format(val_key)] = val_value
 
         # Checkpoint based on new metrics
