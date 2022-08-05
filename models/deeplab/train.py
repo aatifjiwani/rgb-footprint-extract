@@ -148,8 +148,8 @@ class Trainer(object):
                             val_metrics_historical['mIOU'].append(l['val_mIOU'])
                             val_metrics_historical['pixel_acc'].append(l['val_pixel_acc'])
                             val_metrics_historical['f1'].append(l['val_f1'])
-                            if 'val_mIOU-SB' in l:
-                                val_metrics_historical['mIOU-SB'].append(l['val_mIOU-SB'])
+                            if 'val_mIoU-SB' in l:
+                                val_metrics_historical['mIoU-SB'].append(l['val_mIoU-SB'])
                                 for buffer in SMALL_BUILDING_BUFFERS:
                                     val_metrics_historical['SmIoU-V1-{}'.format(buffer)].append(
                                         l['val_SmIoU-V1-{}'.format(buffer)])
@@ -189,11 +189,12 @@ class Trainer(object):
                             f.write('\n')
 
                             # then save the val metrics
-                            dic_line = {'val_loss': val_metrics_historical['loss'][e], 'val_mIOU': val_metrics_historical['mIOU'][e], 
+                            dic_line = {'val_loss': val_metrics_historical['loss'][e],
+                                        'val_mIOU': val_metrics_historical['mIOU'][e],
                                         'val_pixel_acc': val_metrics_historical['pixel_acc'][e], 
                                         'val_f1': val_metrics_historical['f1'][e], 'epoch': e}
-                            if 'mIOU-SB' in val_metrics_historical.keys():
-                                dic_line['val_mIOU-SB'] = val_metrics_historical['mIOU-SB'][e]
+                            if 'mIoU-SB' in val_metrics_historical.keys():
+                                dic_line['val_mIoU-SB'] = val_metrics_historical['mIoU-SB'][e]
                                 for buffer in SMALL_BUILDING_BUFFERS:
                                     dic_line['val_SmIoU-V1-{}'.format(buffer)] = \
                                         val_metrics_historical['SmIoU-V1-{}'.format(buffer)][e]
