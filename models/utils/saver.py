@@ -36,10 +36,10 @@ class Saver(object):
         self.images = 0
         self.best_loss = float('inf')
         self.best_miou = float('-inf')
-        self.best_new_metrics = {'mIoU-SB': float('-inf')}
+        self.best_new_metrics = {'val_mIoU-SB': float('-inf')}
         for buffer in SMALL_BUILDING_BUFFERS:
-            self.best_new_metrics['SmIoU-V1-{}'.format(buffer)] = float('-inf')
-            self.best_new_metrics['SmIoU-V2-{}'.format(buffer)] = float('-inf')
+            self.best_new_metrics['val_SmIoU-V1-{}'.format(buffer)] = float('-inf')
+            self.best_new_metrics['val_SmIoU-V2-{}'.format(buffer)] = float('-inf')
 
     def plot_and_save_image(self, filename, input_type, image_array):
         try:
