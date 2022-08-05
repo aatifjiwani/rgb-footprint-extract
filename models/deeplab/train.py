@@ -8,6 +8,7 @@ import time
 import wandb
 import numpy as np
 from tqdm import tqdm
+import shutil
 
 from torch.utils.data import DataLoader
 
@@ -423,3 +424,8 @@ class Trainer(object):
             wandb.log({'Predictions': wandb_imgs_list})
 
         self.curr_step += 1
+
+        # Remove local wandb files
+        for i in os.listdir('wandb'):
+            if wandb.run.id in i:
+                shutil.rmtree(os.path.join('wandb', i))
