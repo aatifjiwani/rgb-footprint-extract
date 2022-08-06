@@ -230,8 +230,8 @@ class Trainer(object):
                             "val_mIOU": val_metrics_historical['mIOU'][epoch],
                             "val_pixel_acc": val_metrics_historical['pixel_acc'][epoch],
                             "val_f1": val_metrics_historical['f1'][epoch]}
-                        if 'mIOU-SB' in val_metrics_historical.keys():
-                            val_metrics['val_mIOU-SB'] = val_metrics_historical['mIOU-SB'][epoch]
+                        if 'mIoU-SB' in val_metrics_historical.keys():
+                            val_metrics['val_mIoU-SB'] = val_metrics_historical['mIoU-SB'][epoch]
                             for buffer in SMALL_BUILDING_BUFFERS:
                                 val_metrics['val_SmIoU-V1-{}'.format(buffer)] = \
                                     val_metrics_historical['SmIoU-V1-{}'.format(buffer)][epoch]
