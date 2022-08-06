@@ -428,4 +428,4 @@ class Trainer(object):
         # Remove local wandb files
         for i in os.listdir('wandb'):
             if wandb.run.id in i:
-                shutil.rmtree(os.path.join('wandb', i))
+                shutil.rmtree(os.path.join('wandb', i), ignore_errors=True)
