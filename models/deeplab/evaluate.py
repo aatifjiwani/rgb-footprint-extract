@@ -91,6 +91,26 @@ class Tester(object):
         final_output = final_output.argmax(axis=0).astype(np.uint8)
         return final_output
 
+    def infer_multiple(self, ):
+        assert self.test_loader.dataset.__class__.__name__ in ["NumpyDataset"]
+        height, width = self.test_loader.dataset.height, self.test_loader.dataset.width
+
+        tbar = tqdm(self.test_loader)
+        #final_output = np.zeros((len(self.test_loader), height, width), dtype=np.float32)
+        #counts = np.zeros((height, width), dtype=np.float32)
+
+        for i, sample in enumerate(tbar):
+            image, coord, name = sample["image"], sample["coord"], sample['name']
+            assert image.shape[0] == 1, "Inference on multiple images simulatenously is not supported"
+            if self.args.cuda:
+                image = image.cuda()
+
+            with torch.no_grad():
+                output = self.model(image)
+                pred = torch.nn.functional.softmax(output, dim=1).cpu().numpy().squeeze()
+                np.save(os.path.join(self.args.output_dir, name), pred)
+
+
     def test(self, ):
         tbar = tqdm(self.test_loader)
 
