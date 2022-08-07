@@ -219,10 +219,10 @@ def handle_multiple_inference(args):
     # Validate arguments
     input_formats, output_formats = {".npy": "numpy"}, [".npy", ".png", ".tiff"]
 
-    get_ext = lambda filename: os.path.splitext(filename)[-1] if filename else None
-    input_ext, output_ext = get_ext(args.input_filename), get_ext(args.output_filename)
-    assert args.input_filename and input_ext in input_formats, f"Accepted input file formats: {input_formats.keys()}"
-    assert args.output_filename and output_ext in output_formats, f"Accepted output formats: {output_formats}"
+    #get_ext = lambda filename: os.path.splitext(filename)[-1] if filename else None
+    #input_ext, output_ext = get_ext(args.input_filename), get_ext(args.output_filename)
+    #assert args.input_filename and input_ext in input_formats, f"Accepted input file formats: {input_formats.keys()}"
+    #assert args.output_filename and output_ext in output_formats, f"Accepted output formats: {output_formats}"
 
     if args.window_size or args.stride:
         assert args.window_size and args.stride, "Both `window_size` and `stride` must be set."
@@ -232,7 +232,7 @@ def handle_multiple_inference(args):
     tester = Tester(args)
     #print("Inference starting on {}...".format(args.input_filename))
 
-    tester.infer_multiple(args.output_dir)
+    tester.infer_multiple()
 
 
 def handle_evaluate(args):
