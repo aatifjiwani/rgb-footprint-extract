@@ -8,6 +8,7 @@ import time
 import wandb
 import numpy as np
 from tqdm import tqdm
+import shutil
 
 from torch.utils.data import DataLoader
 
@@ -148,13 +149,13 @@ class Trainer(object):
                             val_metrics_historical['mIOU'].append(l['val_mIOU'])
                             val_metrics_historical['pixel_acc'].append(l['val_pixel_acc'])
                             val_metrics_historical['f1'].append(l['val_f1'])
-                            if 'mIOU-SB' in l:
-                                val_metrics_historical['mIOU-SB'].append(l['mIOU-SB'])
+                            if 'val_mIoU-SB' in l:
+                                val_metrics_historical['mIoU-SB'].append(l['val_mIoU-SB'])
                                 for buffer in SMALL_BUILDING_BUFFERS:
                                     val_metrics_historical['SmIoU-V1-{}'.format(buffer)].append(
-                                        l['SmIoU-V1-{}'.format(buffer)])
+                                        l['val_SmIoU-V1-{}'.format(buffer)])
                                     val_metrics_historical['SmIoU-V2-{}'.format(buffer)].append(
-                                        l['SmIoU-V2-{}'.format(buffer)])
+                                        l['val_SmIoU-V2-{}'.format(buffer)])
 
                         elif 'train_loss' in l:
                             if l['epoch'] not in train_metrics_historical:
@@ -189,15 +190,16 @@ class Trainer(object):
                             f.write('\n')
 
                             # then save the val metrics
-                            dic_line = {'val_loss': val_metrics_historical['loss'][e], 'val_mIOU': val_metrics_historical['mIOU'][e], 
+                            dic_line = {'val_loss': val_metrics_historical['loss'][e],
+                                        'val_mIOU': val_metrics_historical['mIOU'][e],
                                         'val_pixel_acc': val_metrics_historical['pixel_acc'][e], 
                                         'val_f1': val_metrics_historical['f1'][e], 'epoch': e}
-                            if 'mIOU-SB' in val_metrics_historical.keys():
-                                dic_line['mIOU-SB'] = val_metrics_historical['mIOU-SB'][e]
+                            if 'mIoU-SB' in val_metrics_historical.keys():
+                                dic_line['val_mIoU-SB'] = val_metrics_historical['mIoU-SB'][e]
                                 for buffer in SMALL_BUILDING_BUFFERS:
-                                    dic_line['SmIoU-V1-{}'.format(buffer)] = \
+                                    dic_line['val_SmIoU-V1-{}'.format(buffer)] = \
                                         val_metrics_historical['SmIoU-V1-{}'.format(buffer)][e]
-                                    dic_line['SmIoU-V2-{}'.format(buffer)] = \
+                                    dic_line['val_SmIoU-V2-{}'.format(buffer)] = \
                                         val_metrics_historical['SmIoU-V2-{}'.format(buffer)][e]
                             json.dump(dic_line, f)
                             f.write('\n')
@@ -228,12 +230,12 @@ class Trainer(object):
                             "val_mIOU": val_metrics_historical['mIOU'][epoch],
                             "val_pixel_acc": val_metrics_historical['pixel_acc'][epoch],
                             "val_f1": val_metrics_historical['f1'][epoch]}
-                        if 'mIOU-SB' in val_metrics_historical.keys():
-                            val_metrics['mIOU-SB'] = val_metrics_historical['mIOU-SB'][epoch]
+                        if 'mIoU-SB' in val_metrics_historical.keys():
+                            val_metrics['val_mIoU-SB'] = val_metrics_historical['mIoU-SB'][epoch]
                             for buffer in SMALL_BUILDING_BUFFERS:
-                                val_metrics['SmIoU-V1-{}'.format(buffer)] = \
+                                val_metrics['val_SmIoU-V1-{}'.format(buffer)] = \
                                     val_metrics_historical['SmIoU-V1-{}'.format(buffer)][epoch]
-                                val_metrics['SmIoU-V2-{}'.format(buffer)] = \
+                                val_metrics['val_SmIoU-V2-{}'.format(buffer)] = \
                                     val_metrics_historical['SmIoU-V2-{}'.format(buffer)][epoch]
 
                         # Save val metrics
@@ -422,3 +424,8 @@ class Trainer(object):
             wandb.log({'Predictions': wandb_imgs_list})
 
         self.curr_step += 1
+
+        # Remove local wandb files
+        for i in os.listdir('wandb'):
+            if wandb.run.id in i:
+                shutil.rmtree(os.path.join('wandb', i), ignore_errors=True)

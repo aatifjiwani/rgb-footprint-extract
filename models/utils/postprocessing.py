@@ -3,6 +3,7 @@ import numpy as np
 import os
 import pyproj
 import rasterio
+import rasterio.features
 from skimage.draw import  polygon2mask
 import shapely
 from shapely.geometry import box

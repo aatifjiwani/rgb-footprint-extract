@@ -36,10 +36,10 @@ class Saver(object):
         self.images = 0
         self.best_loss = float('inf')
         self.best_miou = float('-inf')
-        self.best_new_metrics = {'mIoU-SB': float('-inf')}
+        self.best_new_metrics = {'val_mIoU-SB': float('-inf')}
         for buffer in SMALL_BUILDING_BUFFERS:
-            self.best_new_metrics['SmIoU-V1-{}'.format(buffer)] = float('-inf')
-            self.best_new_metrics['SmIoU-V2-{}'.format(buffer)] = float('-inf')
+            self.best_new_metrics['val_SmIoU-V1-{}'.format(buffer)] = float('-inf')
+            self.best_new_metrics['val_SmIoU-V2-{}'.format(buffer)] = float('-inf')
 
     def plot_and_save_image(self, filename, input_type, image_array):
         try:
@@ -101,24 +101,25 @@ class Saver(object):
                 for val_key, val_value in val_metric_dict:
                     wandb.run.summary['best_{}'.format(val_key)] = val_value
 
-        if val_metric_dict['val_miou'] > self.best_miou:
+        if val_metric_dict['val_mIOU'] > self.best_miou:
             print("Saving best mIOU checkpoint")
-            self.best_miou = val_metric_dict['val_miou']
+            self.best_miou = val_metric_dict['val_mIOU']
 
             if save:
                 torch.save(state, os.path.join(self.save_directory, 'best_miou_{}'.format(filename)))
             if self.args.use_wandb and self.args.best_miou:
-                for val_key, val_value in val_metric_dict:
+                for val_key, val_value in val_metric_dict.items():
                     wandb.run.summary['best_{}'.format(val_key)] = val_value
 
         # Checkpoint based on new metrics
-        for metric in self.best_new_metrics.keys():
-            if val_metric_dict[metric] > self.best_new_metrics[metric]:
-                print("Saving best {} checkpoint".format(metric))
-                self.best_new_metrics[metric] = val_metric_dict[metric]
+        if 'val_mIoU-SB' in val_metric_dict.keys():
+            for metric in self.best_new_metrics.keys():
+                if val_metric_dict[metric] > self.best_new_metrics[metric]:
+                    print("Saving best {} checkpoint".format(metric))
+                    self.best_new_metrics[metric] = val_metric_dict[metric]
 
-                if save:
-                    torch.save(state, os.path.join(self.save_directory, 'best_{}_{}'.format(metric, filename)))
+                    if save:
+                        torch.save(state, os.path.join(self.save_directory, 'best_{}_{}'.format(metric, filename)))
 
         # NEW TO SAVE LAST EPOCH
         if save:
