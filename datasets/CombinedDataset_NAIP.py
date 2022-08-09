@@ -16,8 +16,8 @@ class CombinedDataset_NAIP(Dataset):
         self.root_dir = root_dir
         self.data_type = data_type
 
-        sj = list(sorted(os.listdir(os.path.join(self.root_dir, 'san_jose_naip_512', self.data_type, 'images'))))
-        la = list(sorted(os.listdir(os.path.join(self.root_dir, 'los_angeles_naip/2016_rgb_footprint_512', self.data_type, 'images'))))
+        sj = list(sorted(os.listdir(os.path.join(self.root_dir, 'san_jose_naip_512', 'phase2_superresx2', self.data_type, 'images'))))
+        la = list(sorted(os.listdir(os.path.join(self.root_dir, 'los_angeles_naip/2016_rgb_footprint_512', 'phase2_superresx2', self.data_type, 'images'))))
         self.dic = {'sj': sj, 'la': la}
 
         self.inputs = la+sj
@@ -34,24 +34,28 @@ class CombinedDataset_NAIP(Dataset):
         # get sub_dir
         fp = None
         if image_filename in self.dic['sj']:
-            fp = os.path.join(self.root_dir, 'san_jose_naip_512', self.data_type)
+            fp = os.path.join(self.root_dir, 'san_jose_naip_512', 'phase2_superresx2', self.data_type)
         else:
-            fp = os.path.join(self.root_dir, 'los_angeles_naip/2016_rgb_footprint_512', self.data_type)
+            fp = os.path.join(self.root_dir, 'los_angeles_naip/2016_rgb_footprint_512', 'phase2_superresx2', self.data_type)
 
         # Load image
         image = np.load(os.path.join(fp, "images", image_filename))
         image = torch.Tensor(image).permute(2, 0, 1)[None, :3, :, :] ##Converts to 1,C,H,W -- the NAIP imagery is RGBA, so need to index up to 3
 
         # Load masks
-        mask = np.load(os.path.join(fp, "masks", image_filename.replace(".npy", "_mask.npy")))
-        mask = (mask > 0).astype(np.int32)
+        # (CHANGED NAMING OF MASK to MASK_LOSS FOR PHASE 2)
+        mask_loss = np.load(os.path.join(fp, "masks", image_filename.replace(".npy", "_mask.npy")))
+        mask = (mask_loss > 0).astype(np.int32)
         mask = torch.Tensor(mask)[None, None, :, :] ##1, 1, H, W
+
+        mask_loss = torch.Tensor(mask_loss)[None, None, :, :]
 
         # Apply transforms if any
         if self.transforms is not None:
             for transform in self.transforms:
                 image = transform(image)
                 mask = transform(mask)
+                mask_loss = transform(mask_loss)
 
         # Convert image to [0 1] and C, H, W
         image = image.squeeze()
@@ -60,7 +64,7 @@ class CombinedDataset_NAIP(Dataset):
         # Mask of shape H, W
         mask = torch.ceil(mask).squeeze()
 
-        batch = {'image': image, 'mask': mask, 'name': [image_filename.replace(".npy", "")]}
+        batch = {'image': image, 'mask': mask, 'mask_loss': mask_loss, 'name': [image_filename.replace(".npy", "")]}
 
         # Generate boundary if specified
         if self.generate_boundary:

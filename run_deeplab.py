@@ -33,11 +33,15 @@ def main():
                         choices=['ce', 'ce_dice', 'wce_dice'],
                         help='loss func type (default: ce)')
     parser.add_argument('--fbeta', type=float, default=1, help='beta for FBeta-Measure')
-    parser.add_argument('--loss-weights', type=float, nargs="+", default=[1.0, 1.0], 
+    # parser.add_argument('--loss-weights', type=float, nargs="+", default=[1.0, 1.0], 
+    #                     help='loss weighting')
+    parser.add_argument('--loss-weights', type=str, default='1.0,1.0', 
                         help='loss weighting')
     parser.add_argument("--num-classes", type=int, default=2, 
                         help='number of classes to predict (2 for binary mask)')
-    parser.add_argument('--dropout', type=float, nargs="+", default=[0.1, 0.5], 
+    # parser.add_argument('--dropout', type=float, nargs="+", default=[0.1, 0.5], 
+    #                 help='dropout values')
+    parser.add_argument('--dropout', type=str, default='0.1,0.5', 
                     help='dropout values')
     parser.add_argument('--preempt-robust', action='store_true', default=False,
                     help='True if you want the model to find the latest checkpoint before loading in \
@@ -121,6 +125,20 @@ def run_deeplab(args):
         except ValueError:
             raise ValueError('Argument --gpu_ids must be a comma-separated list of integers only')
 
+    try:
+        args.loss_weights = [float(s) for s in args.loss_weights.split(',')]
+    except ValueError:
+        raise ValueError('Argument --loss_weights must be a comma-separated list of 2 floats')
+
+    try:
+        args.dropout = [float(s) for s in args.dropout.split(',')]
+    except ValueError:
+        raise ValueError('Argument --dropout must be a comma-separated list of 2 floats')
+
+
+    assert len(args.loss_weights) == 2
+    assert len(args.dropout) == 2
+
     if args.sync_bn is None:
         if args.cuda and len(args.gpu_ids) > 1:
             args.sync_bn = True
@@ -144,6 +162,8 @@ def run_deeplab(args):
         for k, v in dic.items():
             if k in args.data_root:
                 loc = f'{v}_'
+            else:
+                loc = 'SJ+LA_'
 
         args.checkname = loc + f'{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.batch_size}'
 
@@ -229,10 +249,10 @@ def handle_multiple_inference(args):
 
     #args.dataset = input_formats[os.path.splitext(args.input_filename)[-1]]
     args.test_batch_size = 1
-    tester = Tester(args)
-    #print("Inference starting on {}...".format(args.input_filename))
+    for i in ['train', 'val', 'test']:
+        tester = Tester1(args, i)
 
-    tester.infer_multiple()
+        tester.infer_multiple()
 
 
 def handle_evaluate(args):

@@ -63,3 +63,21 @@ def build_test_dataloader(args, transforms):
         train = CombinedDataset_NAIP(data_root, 'test', None, transforms)
     else:
         raise NotImplementedError()
+
+def build_dataloader_partition(args, transforms, partition):
+    if args.dataset == "urban3d":
+        return Urban3dDataset(os.path.join(args.data_root, "Urban3D", partition), boundary_kernel_size=None, transforms=transforms)
+    elif args.dataset == "spaceNet":
+        return SpaceNetDataset(os.path.join(args.data_root, "SpaceNet/Vegas", partition), None, transforms)
+    elif args.dataset == "crowdAI":
+        return CrowdAIDataset(os.path.join(args.data_root, "AICrowd", partition), None, transforms)
+    elif args.dataset == "numpy":
+        return NumpyDataset(args.input_filename, args.window_size, args.stride, transforms)
+    elif args.dataset == 'OSM':
+        return OSMDataset(os.path.join(args.data_root, partition), None, transforms)
+    elif args.dataset == 'OSM_split4':
+        return OSMDataset1(os.path.join(args.data_root, partition), None, transforms)
+    elif args.dataset == 'combined_naip':
+        train = CombinedDataset_NAIP(data_root, partition, None, transforms)
+    else:
+        raise NotImplementedError()
