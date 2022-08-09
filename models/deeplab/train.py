@@ -363,7 +363,7 @@ class Trainer(object):
             else:
                 total_f1.append(0)
 
-            New metrics for small buildings
+            # New metrics for small buildings
             smiou_dict = self.evaluator.SmIOU(
                 gt_image=target, pred_image=pred, file_name=names[0],
                 pad_buffers=SMALL_BUILDING_BUFFERS, buffer_val=SEPARATION_BUFFER,
