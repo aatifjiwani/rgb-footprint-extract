@@ -16,7 +16,7 @@ from models.utils.metrics import Evaluator
 from models.utils.collate_fn import generate_split_collate_fn, handle_concatenation
 from models.utils.custom_transforms import tensor_resize
 
-from datasets import build_test_dataloader
+from datasets import build_test_dataloader, build_dataloader_partition
 
 
 class Tester1(object):
@@ -29,7 +29,7 @@ class Tester1(object):
         # self.saver.save_experiment_config()
         
         # Define Dataloader. Also, define any transforms here
-        test_dataset = build_dataloader_partition(args, transforms=None, partition=self.partition)
+        test_dataset = build_dataloader_partition(args, transforms=None, partition=args.partition)
 
         self.test_loader = DataLoader(
                                     test_dataset, 
