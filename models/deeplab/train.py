@@ -386,7 +386,7 @@ class Trainer(object):
             #             class_labels={0: 'bg', 1: 'building'})
             #     )
 
-        Log validation metrics
+        # Log validation metrics
         val_metric_dict = {
             "val_loss": np.mean(total_loss),
             "val_mIOU": np.mean(total_mIOU),
