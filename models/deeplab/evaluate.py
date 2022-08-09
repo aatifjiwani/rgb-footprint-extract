@@ -29,7 +29,7 @@ class Tester1(object):
         # self.saver.save_experiment_config()
         
         # Define Dataloader. Also, define any transforms here
-        test_dataset = build_dataloader_partition(args, transforms=None, partition=args.partition)
+        test_dataset = build_dataloader_partition(args, transforms=None, partition=self.partition)
 
         self.test_loader = DataLoader(
                                     test_dataset, 

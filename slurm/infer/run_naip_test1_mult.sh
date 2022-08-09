@@ -2,7 +2,7 @@
 #SBATCH --begin=now
 #SBATCH --job-name=rgb-footprint-extract
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=avaimar@law.stanford.edu
+#SBATCH --mail-user=nathanjo@law.stanford.edu
 #SBATCH --partition=owners
 #SBATCH --time=03:00:00
 #SBATCH --mem=32GB
