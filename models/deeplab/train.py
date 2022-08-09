@@ -321,8 +321,8 @@ class Trainer(object):
         total_SmIoU_V1 = {buffer: [] for buffer in SMALL_BUILDING_BUFFERS}
         total_SmIoU_V2 = {buffer: [] for buffer in SMALL_BUILDING_BUFFERS}
 
-        if self.args.use_wandb:
-            wandb_imgs_list = []
+        # if self.args.use_wandb:
+        #     wandb_imgs_list = []
 
         for i, sample in enumerate(tbar):
             image, mask, loss_weights = sample['image'], sample['mask'].long(), sample['mask_loss']
@@ -375,14 +375,14 @@ class Trainer(object):
             #     total_SmIoU_V2[buffer].append(smiou_dict['SmIoU-V2-{}'.format(buffer)])
 
             # Log segmentation map to WandB
-            if self.args.use_wandb:
-                filename_single, image_single, pred_single, target_single = handle_concatenation(
-                    self.args.dataset == "combined", None, image, pred, target, names)
-                wandb_imgs_list.append(
-                    wandb_segmentation_image(
-                        input_img=image_single, pred_mask=pred_single, gt_mask=target_single,
-                        class_labels={0: 'bg', 1: 'building'})
-                )
+            # if self.args.use_wandb:
+            #     filename_single, image_single, pred_single, target_single = handle_concatenation(
+            #         self.args.dataset == "combined", None, image, pred, target, names)
+            #     wandb_imgs_list.append(
+            #         wandb_segmentation_image(
+            #             input_img=image_single, pred_mask=pred_single, gt_mask=target_single,
+            #             class_labels={0: 'bg', 1: 'building'})
+            #     )
 
         # Log validation metrics
         # val_metric_dict = {
@@ -427,12 +427,12 @@ class Trainer(object):
         #self.saver.log_wandb_image(filename, image, pred, target)
 
         # Log segmentations in WandB
-        if self.args.use_wandb:
-            wandb.log({'Predictions': wandb_imgs_list})
+        # if self.args.use_wandb:
+        #     wandb.log({'Predictions': wandb_imgs_list})
 
         self.curr_step += 1
 
         # Remove local wandb files
-        for i in os.listdir('wandb'):
-            if wandb.run.id in i:
-                shutil.rmtree(os.path.join('wandb', i), ignore_errors=True)
+        # for i in os.listdir('wandb'):
+        #     if wandb.run.id in i:
+        #         shutil.rmtree(os.path.join('wandb', i), ignore_errors=True)
