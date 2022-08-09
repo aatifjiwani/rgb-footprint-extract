@@ -173,7 +173,7 @@ def main():
 
     backbone = ['drn_c42']
     out_stride = [8]
-    dataset = ['combined_naip']
+    dataset = ['OSM']
     workers = [4]
     loss_type = ['wce_dice']
     fbeta = [0.15]
