@@ -15,7 +15,7 @@ backbone_list="drn_c42 drn_c42
 "
 out_stride_list="8 8
 "
-dataset_list="combined_naip combined_naip
+dataset_list="OSM OSM
 "
 loss_type_list="wce_dice wce_dice
 "
