@@ -44,22 +44,22 @@ def generate(backbone, out_stride, dataset, workers, loss_type, fbeta, epochs, b
                                                         for r in resume:
                                                             for lo in loss_weights_param:
                                                                 for s in superres:
-                                                                    backbone_list.extend([b]*4)
-                                                                    out_stride_list.extend([o]*4)
-                                                                    dataset_list.extend([d]*4)
-                                                                    loss_type_list.extend([l]*4)
-                                                                    fbeta_list.extend([f]*4)
-                                                                    workers_list.extend([w]*4)
-                                                                    epochs_list.extend([e]*4)
-                                                                    batch_size_list.extend([bs]*4)
-                                                                    test_batch_size_list.extend([tb]*4)
-                                                                    gpu_ids_list.extend([g]*4)
-                                                                    loss_weights_list.extend([lw]*4)
-                                                                    dropout_list.extend([dr]*4)
-                                                                    data_root_list.extend([da]*4)
-                                                                    resume_list.extend([r]*4)
-                                                                    loss_weights_param_list.extend([lo]*4)
-                                                                    superres_list.extend([s]*4)
+                                                                    backbone_list.extend([b])
+                                                                    out_stride_list.extend([o])
+                                                                    dataset_list.extend([d])
+                                                                    loss_type_list.extend([l])
+                                                                    fbeta_list.extend([f])
+                                                                    workers_list.extend([w])
+                                                                    epochs_list.extend([e])
+                                                                    batch_size_list.extend([bs])
+                                                                    test_batch_size_list.extend([tb])
+                                                                    gpu_ids_list.extend([g])
+                                                                    loss_weights_list.extend([lw])
+                                                                    dropout_list.extend([dr])
+                                                                    data_root_list.extend([da])
+                                                                    resume_list.extend([r])
+                                                                    loss_weights_param_list.extend([lo])
+                                                                    superres_list.extend([s])
 
 
 
@@ -176,94 +176,24 @@ def main():
     dataset = ['combined_naip']
     workers = [4]
     loss_type = ['wce_dice']
-    fbeta = [0.15, 0.2, 0.25]
+    fbeta = [0.15]
     epochs = [70]
     batch_size = [24]
     test_batch_size = [4]
-    weight_decay = [2.403e-05,
- 0.00060935,
- 0.0009821,
- 7.444e-05,
- 8.505e-05,
- 0.00011687,
- 0.00054426,
- 3.582e-05,
- 2.699e-05,
- 0.00088518,
- 0.00037878,
- 2.053e-05,
- 2.948e-05,
- 0.00026511,
- 0.00030879,
- 4.949e-05,
- 4.118e-05,
- 0.00010202,
- 0.00086776,
- 2.156e-05,
- 7.917e-05,
- 0.00075264,
- 0.00016199,
- 8.93e-05,
- 5.478e-05,
- 0.00029785,
- 0.00012133,
- 8.403e-05,
- 9.643e-05,
- 0.00031588,
- 0.00053704,
- 3.486e-05,
- 3.521e-05,
- 0.00069474,
- 0.00099283,
- 9.158e-05]
+    weight_decay = [2.403e-05]
     # weight_decay = [1e-4, 1e-2]
     gpu_ids = ['0,1,2']
     # lr = [5e-4, 5e-3]
-    lr = [0.0002403,
- 0.0063974,
- 0.0006996,
- 0.0094572,
- 0.0007751,
- 0.0028153,
- 0.0007212,
- 0.0097927,
- 0.0005799,
- 0.0084325,
- 0.0004032,
- 0.0098519,
- 0.000856,
- 0.0052854,
- 0.0002535,
- 0.0074523,
- 0.0007032,
- 0.0033791,
- 0.000861,
- 0.0017896,
- 0.000995,
- 0.0052322,
- 0.0008872,
- 0.0019201,
- 0.0001711,
- 0.0021573,
- 0.0005785,
- 0.0032615,
- 0.0001908,
- 0.0061425,
- 0.0002779,
- 0.0034187,
- 0.0002035,
- 0.0054401,
- 0.0003585,
- 0.00621]
+    lr = [0.0002403]
     loss_weights = ['1.0,1.0']
     dropout = ['0.3,0.5']
     resume = ['crowdAI']
     data_root = ['/oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/']
-    loss_weights_param = [1.025, 1.03, 1.035]
+    loss_weights_param = [1.025, 1.03]
     superres = [2]
     
 
-    array = len(fbeta) * 4 * len(loss_weights_param)- 1
+    array = len(fbeta) * len(loss_weights_param)- 1
 
     generate(backbone, out_stride, dataset, workers, loss_type, fbeta, epochs, batch_size, test_batch_size, weight_decay,
         gpu_ids, lr, loss_weights, dropout, resume, data_root, loss_weights_param, superres, array)

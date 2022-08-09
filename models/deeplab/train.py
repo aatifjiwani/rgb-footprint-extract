@@ -362,17 +362,17 @@ class Trainer(object):
                 total_f1.append(0)
 
             # New metrics for small buildings
-            smiou_dict = self.evaluator.SmIOU(
-                gt_image=target, pred_image=pred, file_name=names[0],
-                pad_buffers=SMALL_BUILDING_BUFFERS, buffer_val=SEPARATION_BUFFER,
-                small_area_thresh=SMALL_AREA_THRESHOLD,
-                large_area_thresh=LARGE_AREA_THRESHOLD,
-                road_buffer=ROAD_BUFFER)
+            # smiou_dict = self.evaluator.SmIOU(
+            #     gt_image=target, pred_image=pred, file_name=names[0],
+            #     pad_buffers=SMALL_BUILDING_BUFFERS, buffer_val=SEPARATION_BUFFER,
+            #     small_area_thresh=SMALL_AREA_THRESHOLD,
+            #     large_area_thresh=LARGE_AREA_THRESHOLD,
+            #     road_buffer=ROAD_BUFFER)
 
-            total_mIoU_SB.append(smiou_dict['mIoU-SB'])
-            for buffer in SMALL_BUILDING_BUFFERS:
-                total_SmIoU_V1[buffer].append(smiou_dict['SmIoU-V1-{}'.format(buffer)])
-                total_SmIoU_V2[buffer].append(smiou_dict['SmIoU-V2-{}'.format(buffer)])
+            # total_mIoU_SB.append(smiou_dict['mIoU-SB'])
+            # for buffer in SMALL_BUILDING_BUFFERS:
+            #     total_SmIoU_V1[buffer].append(smiou_dict['SmIoU-V1-{}'.format(buffer)])
+            #     total_SmIoU_V2[buffer].append(smiou_dict['SmIoU-V2-{}'.format(buffer)])
 
             # Log segmentation map to WandB
             if self.args.use_wandb:
@@ -385,15 +385,22 @@ class Trainer(object):
                 )
 
         # Log validation metrics
+        # val_metric_dict = {
+        #     "val_loss": np.mean(total_loss),
+        #     "val_mIOU": np.mean(total_mIOU),
+        #     "val_pixel_acc": np.mean(total_pixelAcc),
+        #     "val_f1": np.mean(total_f1),
+        #     'val_mIoU-SB': np.mean(total_mIoU_SB)}
+        # for buffer in SMALL_BUILDING_BUFFERS:
+        #     val_metric_dict['val_SmIoU-V1-{}'.format(buffer)] = np.mean(total_SmIoU_V1[buffer])
+        #     val_metric_dict['val_SmIoU-V2-{}'.format(buffer)] = np.mean(total_SmIoU_V2[buffer])
+
+
         val_metric_dict = {
             "val_loss": np.mean(total_loss),
             "val_mIOU": np.mean(total_mIOU),
             "val_pixel_acc": np.mean(total_pixelAcc),
-            "val_f1": np.mean(total_f1),
-            'val_mIoU-SB': np.mean(total_mIoU_SB)}
-        for buffer in SMALL_BUILDING_BUFFERS:
-            val_metric_dict['val_SmIoU-V1-{}'.format(buffer)] = np.mean(total_SmIoU_V1[buffer])
-            val_metric_dict['val_SmIoU-V2-{}'.format(buffer)] = np.mean(total_SmIoU_V2[buffer])
+            "val_f1": np.mean(total_f1)}
         self.saver.log_wandb(epoch, self.curr_step, val_metric_dict)
 
         # Save checkpoint

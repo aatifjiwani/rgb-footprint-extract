@@ -7,45 +7,45 @@
 #SBATCH --mem=50GB
 #SBATCH --gres=gpu:3
 #SBATCH --time=12:00:00
-#SBATCH --array=0-35%1
+#SBATCH --array=0-1%1
 
 cd ../../
 
-backbone_list="drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42 drn_c42
+backbone_list="drn_c42 drn_c42
 "
-out_stride_list="8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
+out_stride_list="8 8
 "
-dataset_list="OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM OSM
+dataset_list="combined_naip combined_naip
 "
-loss_type_list="wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice wce_dice
+loss_type_list="wce_dice wce_dice
 "
-workers_list="4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+workers_list="4 4
 "
-fbeta_list="0.15 0.15 0.15 0.15 0.15 0.15 0.15 0.15 0.15 0.15 0.15 0.15 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25
+fbeta_list="0.15 0.15
 "
-epochs_list="70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70 70
+epochs_list="70 70
 "
-batch_size_list="24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24 24
+batch_size_list="24 24
 "
-test_batch_size_list="4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4 4
+test_batch_size_list="4 4
 "
-weight_decay_list="0.0001 0.0001 0.0001 0.0001 0.0001 0.0001 0.01 0.01 0.01 0.01 0.01 0.01 0.0001 0.0001 0.0001 0.0001 0.0001 0.0001 0.01 0.01 0.01 0.01 0.01 0.01 0.0001 0.0001 0.0001 0.0001 0.0001 0.0001 0.01 0.01 0.01 0.01 0.01 0.01
+weight_decay_list="2.403e-05
 "
-loss_weights_list="1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+loss_weights_list="1.0,1.0 1.0,1.0
 "
-lr_list="0.0005 0.0005 0.0005 0.005 0.005 0.005 0.0005 0.0005 0.0005 0.005 0.005 0.005 0.0005 0.0005 0.0005 0.005 0.005 0.005 0.0005 0.0005 0.0005 0.005 0.005 0.005 0.0005 0.0005 0.0005 0.005 0.005 0.005 0.0005 0.0005 0.0005 0.005 0.005 0.005
+lr_list="0.0002403
 "
-dropout_list="0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5 0.3 0.5
+dropout_list="0.3,0.5 0.3,0.5
 "
-gpu_ids_list="0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2 0,1,2
+gpu_ids_list="0,1,2 0,1,2
 "
-resume_list="crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI crowdAI
+resume_list="crowdAI crowdAI
 "
-data_root_list="/oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/
+data_root_list="/oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/ /oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2_superresx2/
 "
-loss_weights_param_list="1.025 1.03 1.035 1.025 1.03 1.035 1.025 1.03 1.035 1.025 1.03 1.035 1.025 1.03 1.035 1.025 1.03 1.035 1.025 1.03 1.035 1.025 1.03 1.035 1.025 1.03 1.035 1.025 1.03 1.035 1.025 1.03 1.035 1.025 1.03 1.035
+loss_weights_param_list="1.025 1.03
 "
-superres_list="2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+superres_list="2 2
 "
 backbone_list=($backbone_list)
 out_stride_list=($out_stride_list)
