@@ -1,6 +1,7 @@
 import os
 import sys
 
+
 def put_qmark(s):
     s = "\"" + s +"\""
     return s
@@ -18,9 +19,9 @@ def generate(backbone, out_stride, dataset, workers, loss_type, fbeta, epochs, b
     epochs_list = []
     batch_size_list = []
     test_batch_size_list = []
-    weight_decay_list = []
+    weight_decay_list = weight_decay
     gpu_ids_list = []
-    lr_list = []
+    lr_list = lr
     loss_weights_list = []
     dropout_list = []
     resume_list = []
@@ -36,33 +37,29 @@ def generate(backbone, out_stride, dataset, workers, loss_type, fbeta, epochs, b
                             for e in epochs:
                                 for bs in batch_size:
                                     for tb in test_batch_size:
-                                        for we in weight_decay:
-                                            for ll in lr:
-                                                for lw in loss_weights:
-                                                    for g in gpu_ids:
-                                                        for da in data_root:
-                                                            for dr in dropout:
-                                                                for r in resume:
-                                                                    for lo in loss_weights_param:
-                                                                        for s in superres:
-                                                                            backbone_list.append(b)
-                                                                            out_stride_list.append(o)
-                                                                            dataset_list.append(d)
-                                                                            loss_type_list.append(l)
-                                                                            fbeta_list.append(f)
-                                                                            workers_list.append(w)
-                                                                            epochs_list.append(e)
-                                                                            batch_size_list.append(bs)
-                                                                            test_batch_size_list.append(tb)
-                                                                            weight_decay_list.append(we)
-                                                                            gpu_ids_list.append(g)
-                                                                            loss_weights_list.append(lw)
-                                                                            lr_list.append(ll)
-                                                                            dropout_list.append(dr)
-                                                                            data_root_list.append(da)
-                                                                            resume_list.append(r)
-                                                                            loss_weights_param_list.append(lo)
-                                                                            superres_list.append(s)
+                                        for lw in loss_weights:
+                                            for g in gpu_ids:
+                                                for da in data_root:
+                                                    for dr in dropout:
+                                                        for r in resume:
+                                                            for lo in loss_weights_param:
+                                                                for s in superres:
+                                                                    backbone_list.append(b)
+                                                                    out_stride_list.append(o)
+                                                                    dataset_list.append(d)
+                                                                    loss_type_list.append(l)
+                                                                    fbeta_list.append(f)
+                                                                    workers_list.append(w)
+                                                                    epochs_list.append(e)
+                                                                    batch_size_list.append(bs)
+                                                                    test_batch_size_list.append(tb)
+                                                                    gpu_ids_list.append(g)
+                                                                    loss_weights_list.append(lw)
+                                                                    dropout_list.append(dr)
+                                                                    data_root_list.append(da)
+                                                                    resume_list.append(r)
+                                                                    loss_weights_param_list.append(lo)
+                                                                    superres_list.append(s)
 
 
 
@@ -183,9 +180,81 @@ def main():
     epochs = [70]
     batch_size = [24]
     test_batch_size = [4]
-    weight_decay = [1e-4, 1e-2]
+    weight_decay = [2.403e-05,
+ 0.00060935,
+ 0.0009821,
+ 7.444e-05,
+ 8.505e-05,
+ 0.00011687,
+ 0.00054426,
+ 3.582e-05,
+ 2.699e-05,
+ 0.00088518,
+ 0.00037878,
+ 2.053e-05,
+ 2.948e-05,
+ 0.00026511,
+ 0.00030879,
+ 4.949e-05,
+ 4.118e-05,
+ 0.00010202,
+ 0.00086776,
+ 2.156e-05,
+ 7.917e-05,
+ 0.00075264,
+ 0.00016199,
+ 8.93e-05,
+ 5.478e-05,
+ 0.00029785,
+ 0.00012133,
+ 8.403e-05,
+ 9.643e-05,
+ 0.00031588,
+ 0.00053704,
+ 3.486e-05,
+ 3.521e-05,
+ 0.00069474,
+ 0.00099283,
+ 9.158e-05]
+    # weight_decay = [1e-4, 1e-2]
     gpu_ids = ['0,1,2']
-    lr = [5e-4, 5e-3]
+    # lr = [5e-4, 5e-3]
+    lr = [0.0002403,
+ 0.0063974,
+ 0.0006996,
+ 0.0094572,
+ 0.0007751,
+ 0.0028153,
+ 0.0007212,
+ 0.0097927,
+ 0.0005799,
+ 0.0084325,
+ 0.0004032,
+ 0.0098519,
+ 0.000856,
+ 0.0052854,
+ 0.0002535,
+ 0.0074523,
+ 0.0007032,
+ 0.0033791,
+ 0.000861,
+ 0.0017896,
+ 0.000995,
+ 0.0052322,
+ 0.0008872,
+ 0.0019201,
+ 0.0001711,
+ 0.0021573,
+ 0.0005785,
+ 0.0032615,
+ 0.0001908,
+ 0.0061425,
+ 0.0002779,
+ 0.0034187,
+ 0.0002035,
+ 0.0054401,
+ 0.0003585,
+ 0.00621]
     loss_weights = ['1.0 1.0']
     dropout = ['0.3 0.5']
     resume = ['crowdAI']
@@ -194,7 +263,7 @@ def main():
     superres = [2]
     
 
-    array = len(fbeta) * len(weight_decay) * len(lr) * len(loss_weights_param)- 1
+    array = len(fbeta) * 4 * len(loss_weights_param)- 1
 
     generate(backbone, out_stride, dataset, workers, loss_type, fbeta, epochs, batch_size, test_batch_size, weight_decay,
         gpu_ids, lr, loss_weights, dropout, resume, data_root, loss_weights_param, superres, array)

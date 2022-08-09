@@ -144,6 +144,8 @@ def run_deeplab(args):
         for k, v in dic.items():
             if k in args.data_root:
                 loc = f'{v}_'
+            else:
+                loc = 'SJ+LA_'
 
         args.checkname = loc + f'{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.batch_size}'
 

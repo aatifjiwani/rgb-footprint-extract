@@ -16,8 +16,8 @@ class CombinedDataset_NAIP(Dataset):
         self.root_dir = root_dir
         self.data_type = data_type
 
-        sj = list(sorted(os.listdir(os.path.join(self.root_dir, 'san_jose_naip_512', self.data_type, 'images'))))
-        la = list(sorted(os.listdir(os.path.join(self.root_dir, 'los_angeles_naip/2016_rgb_footprint_512', self.data_type, 'images'))))
+        sj = list(sorted(os.listdir(os.path.join(self.root_dir, 'san_jose_naip_512', 'phase2_superresx2', self.data_type, 'images'))))
+        la = list(sorted(os.listdir(os.path.join(self.root_dir, 'los_angeles_naip/2016_rgb_footprint_512', 'phase2_superresx2', self.data_type, 'images'))))
         self.dic = {'sj': sj, 'la': la}
 
         self.inputs = la+sj
@@ -34,9 +34,9 @@ class CombinedDataset_NAIP(Dataset):
         # get sub_dir
         fp = None
         if image_filename in self.dic['sj']:
-            fp = os.path.join(self.root_dir, 'san_jose_naip_512', self.data_type)
+            fp = os.path.join(self.root_dir, 'san_jose_naip_512', 'phase2_superresx2', self.data_type)
         else:
-            fp = os.path.join(self.root_dir, 'los_angeles_naip/2016_rgb_footprint_512', self.data_type)
+            fp = os.path.join(self.root_dir, 'los_angeles_naip/2016_rgb_footprint_512', 'phase2_superresx2', self.data_type)
 
         # Load image
         image = np.load(os.path.join(fp, "images", image_filename))
