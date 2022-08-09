@@ -19,6 +19,142 @@ from models.utils.custom_transforms import tensor_resize
 from datasets import build_test_dataloader
 
 
+class Tester1(object):
+    def __init__(self, args, partition):
+        self.partition = partition
+        self.args = args
+
+        # Define Saver -- Commented this out because we never need to log saves
+        # self.saver = Saver(args)
+        # self.saver.save_experiment_config()
+        
+        # Define Dataloader. Also, define any transforms here
+        test_dataset = build_dataloader_partition(args, transforms=None, partition=self.partition)
+
+        self.test_loader = DataLoader(
+                                    test_dataset, 
+                                    batch_size=args.test_batch_size, 
+                                    num_workers=args.workers,
+                                )
+        self.nclass = args.num_classes
+
+        # Define network
+        print("Using backbone {} with output stride {} and dropout values {}, {}".format(args.backbone, args.out_stride, args.dropout[0], args.dropout[1]))
+        self.model = DeepLab(num_classes=self.nclass,
+                        backbone=args.backbone,
+                        output_stride=args.out_stride,
+                        sync_bn=args.sync_bn,
+                        freeze_bn=args.freeze_bn,
+                        dropout_low=args.dropout[0],
+                        dropout_high=args.dropout[1],
+                    )
+
+        optimizer = torch.optim.SGD(self.model.parameters(), lr=args.lr, momentum=args.momentum,
+                                    weight_decay=args.weight_decay, nesterov=args.nesterov)
+
+        self.optimizer = optimizer
+                    
+        self.model, self.optimizer, self.start_epoch = load_model(self.model, self.optimizer, args.resume, args.best_miou, args.cuda, args.gpu_ids)
+
+        self.model.eval()
+        self.evaluator = Evaluator(self.nclass)
+        self.curr_step = 0
+
+    def infer(self,):
+        assert self.test_loader.dataset.__class__.__name__ in ["NumpyDataset"]
+        height, width = self.test_loader.dataset.height, self.test_loader.dataset.width
+
+        tbar = tqdm(self.test_loader)
+        final_output = np.zeros((2, height, width), dtype=np.float32)
+        counts = np.zeros((height, width), dtype=np.float32)
+
+        for i, sample in enumerate(tbar):
+            image, coord = sample["image"], sample["coord"]
+            assert image.shape[0] == 1, "Inference on multiple images simulatenously is not supported"
+            if self.args.cuda:
+                image = image.cuda()
+
+            with torch.no_grad():
+                output = self.model(image)
+                pred = torch.nn.functional.softmax(output, dim=1).cpu().numpy().squeeze()
+
+            if len(self.test_loader) == 1:
+                final_output = pred
+                counts[:] = 1
+            else:
+                row, col = coord.squeeze()
+                
+                final_output[:, row:row+self.args.window_size, col:col+self.args.window_size] += pred
+                counts[row:row+self.args.window_size, col:col+self.args.window_size] += 1
+
+        final_output /= counts
+        final_output = final_output.argmax(axis=0).astype(np.uint8)
+        return final_output
+
+    def infer_multiple(self, ):
+        tbar = tqdm(self.test_loader)
+        
+        for i, sample in enumerate(tbar):
+            image, name = sample["image"], sample['name']
+            assert image.shape[0] == 1, "Inference on multiple images simulatenously is not supported"
+            if self.args.cuda:
+                image = image.cuda()
+
+            with torch.no_grad():
+                output = self.model(image)
+                pred = torch.nn.functional.softmax(output, dim=1).cpu().numpy().squeeze()
+                pred = pred.argmax(axis=0).astype(np.uint8)
+                np.save(os.path.join(self.args.output_dir, '{}.npy'.format(name[0][0])), pred)
+
+
+    def test(self, ):
+        tbar = tqdm(self.test_loader)
+
+        total_pixelAcc = []
+        total_mIOU = []
+        total_dice = []
+        total_f1 = []
+        total_precision, total_recall = [], []
+
+        for i, sample in enumerate(tbar):
+            image, mask = sample['image'], sample['mask'].long()
+            names = sample['name']
+
+            # cuda enable image/mask
+            if self.args.cuda:
+                image, mask = image.cuda(), mask.cuda()
+
+            with torch.no_grad():
+                output = self.model(image)
+                     
+            pred = torch.nn.functional.softmax(output, dim=1)
+            pred = pred.data.cpu().numpy()
+            pred = np.argmax(pred, axis=1)
+
+            target = mask.cpu().numpy()
+
+            total_pixelAcc.append(self.evaluator.pixelAcc_manual(target, pred))
+            total_mIOU.append(self.evaluator.mIOU_manual(target, pred))
+            f1, pre, rec = self.evaluator.f1score_manual_full(target, pred)
+
+            if (not np.isnan(f1) and not np.isnan(pre) and not np.isnan(rec)):
+                total_f1.append(f1)
+                total_precision.append(pre)
+                total_recall.append(rec)
+            else:
+                total_f1.append(0)
+                total_precision.append(0)
+                total_recall.append(0)
+
+        print({
+                "test_mIOU": np.mean(total_mIOU),
+                "test_pixel_acc": np.mean(total_pixelAcc),
+                "test_f1": np.mean(total_f1),
+                "test_ap": np.mean(total_precision),
+                "test_ar": np.mean(total_recall),
+            })
+
+
 class Tester(object):
     def __init__(self, args):
         self.args = args
@@ -28,9 +164,8 @@ class Tester(object):
         # self.saver.save_experiment_config()
         
         # Define Dataloader. Also, define any transforms here
-        test_dataset = build_test_dataloader(args, transforms=None)
+        test_dataset = build_dataloader_partition(args, transforms=None, partition='test')
 
-        print("Testing on {} samples".format(len(test_dataset)))
         self.test_loader = DataLoader(
                                     test_dataset, 
                                     batch_size=args.test_batch_size, 

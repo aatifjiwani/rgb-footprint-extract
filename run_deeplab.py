@@ -229,10 +229,10 @@ def handle_multiple_inference(args):
 
     #args.dataset = input_formats[os.path.splitext(args.input_filename)[-1]]
     args.test_batch_size = 1
-    tester = Tester(args)
-    #print("Inference starting on {}...".format(args.input_filename))
+    for i in ['train', 'val', 'test']:
+        tester = Tester1(args, i)
 
-    tester.infer_multiple()
+        tester.infer_multiple()
 
 
 def handle_evaluate(args):
