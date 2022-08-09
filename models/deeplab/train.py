@@ -134,7 +134,9 @@ class Trainer(object):
             jsonl_fp = os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/run', args.checkname, 'metrics.jsonl')
             if os.path.exists(jsonl_fp):
                 # open jsonl 
-                val_metrics_historical = {'loss': [], 'mIOU': [], 'pixel_acc': [], 'f1': [], 'mIoU-SB': []}
+                # UNBLOCK THIS TO DO mIOU
+                # val_metrics_historical = {'loss': [], 'mIOU': [], 'pixel_acc': [], 'f1': [], 'mIoU-SB': []}
+                val_metrics_historical = {'loss': [], 'mIOU': [], 'pixel_acc': [], 'f1': []}
                 for buffer in SMALL_BUILDING_BUFFERS:
                     val_metrics_historical['SmIoU-V1-{}'.format(buffer)] = []
                     val_metrics_historical['SmIoU-V2-{}'.format(buffer)] = []
