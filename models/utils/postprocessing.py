@@ -2,12 +2,13 @@ import geopandas as gpd
 import numpy as np
 import os
 import pyproj
+from pyproj import Geod
 import rasterio
 import rasterio.features
 from skimage.draw import  polygon2mask
 import shapely
 from shapely.geometry import box
-from shapely.ops import transform
+from shapely.ops import transform, orient
 
 
 # Params
@@ -121,8 +122,13 @@ def filter_buildings_area(buildings_gpd, area_thresh, larger_than=True):
     larger than a threshold
     :return: (gpd.GeoDataFrame)
     """
-    buildings_gpd = buildings_gpd.to_crs('EPSG:26910') # TODO should we vary this by LA, SJ?
-    buildings_gpd['area'] = buildings_gpd.area
+
+    geod = Geod(ellps="WGS84")
+
+    # apply orient() before passing to Geod so that the area is not negative
+    buildings_gpd['area'] = buildings_gpd['geometry'].progress_apply(
+        lambda x: geod.geometry_area_perimeter(orient(x))[0])
+
     if larger_than:
         buildings_gpd = buildings_gpd.loc[buildings_gpd['area'] > area_thresh]
     else:
