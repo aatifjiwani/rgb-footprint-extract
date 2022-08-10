@@ -19,7 +19,7 @@ def main():
     parser.add_argument('--out-stride', type=int, default=16,
                         help='network output stride (default: 8)')
     parser.add_argument('--dataset', type=str, default='urban3d',
-                        choices=['urban3d', 'spaceNet', 'crowdAI', 'combined'],
+                        choices=['urban3d', 'spaceNet', 'crowdAI', 'combined', 'OSM', 'combined_naip', 'OSM_split4'],
                         help='dataset name (default: urban3d)')
     parser.add_argument('--data-root', type=str, default='/data/',
                         help='datasets root path')
@@ -27,18 +27,25 @@ def main():
                         metavar='N', help='dataloader threads')
     parser.add_argument('--sync-bn', type=bool, default=None,
                         help='whether to use sync bn (default: auto)')
-    parser.add_argument('--freeze-bn', type=bool, default=False,
+    parser.add_argument('--freeze-bn', action='store_true', default=False,
                         help='whether to freeze bn parameters (default: False)')
     parser.add_argument('--loss-type', type=str, default='ce_dice',
                         choices=['ce', 'ce_dice', 'wce_dice'],
                         help='loss func type (default: ce)')
     parser.add_argument('--fbeta', type=float, default=1, help='beta for FBeta-Measure')
-    parser.add_argument('--loss-weights', type=float, nargs="+", default=[1.0, 1.0], 
+    # parser.add_argument('--loss-weights', type=float, nargs="+", default=[1.0, 1.0], 
+    #                     help='loss weighting')
+    parser.add_argument('--loss-weights', type=str, default='1.0,1.0', 
                         help='loss weighting')
     parser.add_argument("--num-classes", type=int, default=2, 
                         help='number of classes to predict (2 for binary mask)')
-    parser.add_argument('--dropout', type=float, nargs="+", default=[0.1, 0.5], 
+    # parser.add_argument('--dropout', type=float, nargs="+", default=[0.1, 0.5], 
+    #                 help='dropout values')
+    parser.add_argument('--dropout', type=str, default='0.1,0.5', 
                     help='dropout values')
+    parser.add_argument('--preempt-robust', action='store_true', default=False,
+                    help='True if you want the model to find the latest checkpoint before loading in \
+                    resume checkpoint. Helpful when SLURM pre-empts and stops the job and you don\'t want to restart from scratch')
 
     # training hyper params
     parser.add_argument('--epochs', type=int, default=None, metavar='N',
@@ -53,6 +60,8 @@ def main():
                                 testing (default: auto)')
     parser.add_argument('--lr', type=float, default=0.0001, metavar='LR',
                         help='learning rate (default: auto)')
+    parser.add_argument('--loss-weights-param', type=float, default=1.01,
+                        help='base of exponential function in defining loss weights')
     # optimizer params
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')
@@ -72,6 +81,8 @@ def main():
     # name
     parser.add_argument('--checkname', type=str, default=None,
                         help='set the checkpoint name')
+    parser.add_argument('--checkname-add', type=str, default=None,
+                        help='set the checkpoint name')
 
     # evaluation option
     parser.add_argument('--no-val', action='store_true', default=False,
@@ -88,12 +99,20 @@ def main():
     parser.add_argument('--output-filename', type=str, default=None, help='path to where predicted segmentation mask will be written')
     parser.add_argument('--window-size', type=int, default=None, help="the size of grid blocks to sample from the input, use if encountering OOM issues")
     parser.add_argument('--stride', type=int, default=None, help="the stride at which to sample grid blocks, recommended value is equal to `window_size`")
+    parser.add_argument('--minference', action='store_true', default=False)
+    parser.add_argument('--output-dir', type=str, default=None,
+                        help='path to where multiple predicted segmentation mask will be written')
 
     #boundaries
     parser.add_argument('--incl-bounds', action='store_true', default=False,
                         help='includes boundaries of masks in loss function')
     parser.add_argument('--bounds-kernel-size', type=int, default=3,
                         help='kernel size for calculating boundary')
+
+    # misc
+    parser.add_argument('--owner', type=str, default=None, help='N or A to indicate who\'s running')
+    parser.add_argument('--superres', type=int, default=None,
+                        help='whether to use the superres imagery or not')
 
     args = parser.parse_args()
     run_deeplab(args)
@@ -105,6 +124,20 @@ def run_deeplab(args):
             args.gpu_ids = [int(s) for s in args.gpu_ids.split(',')]
         except ValueError:
             raise ValueError('Argument --gpu_ids must be a comma-separated list of integers only')
+
+    try:
+        args.loss_weights = [float(s) for s in args.loss_weights.split(',')]
+    except ValueError:
+        raise ValueError('Argument --loss_weights must be a comma-separated list of 2 floats')
+
+    try:
+        args.dropout = [float(s) for s in args.dropout.split(',')]
+    except ValueError:
+        raise ValueError('Argument --dropout must be a comma-separated list of 2 floats')
+
+
+    assert len(args.loss_weights) == 2
+    assert len(args.dropout) == 2
 
     if args.sync_bn is None:
         if args.cuda and len(args.gpu_ids) > 1:
@@ -123,13 +156,54 @@ def run_deeplab(args):
         args.test_batch_size = args.batch_size
 
     if args.checkname is None:
-        args.checkname = 'deeplab-'+str(args.backbone)
+        dic = {'los_angeles': 'LA', 'san_jose': 'SJ'}
+
+        loc = ''
+        for k, v in dic.items():
+            if k in args.data_root:
+                loc = f'{v}_'
+            else:
+                loc = 'SJ+LA_'
+
+        args.checkname = loc + f'{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.batch_size}'
+
+        if args.superres is not None:
+            args.checkname += f'_superresx{args.superres}'
+
+        if args.checkname_add is not None:
+            args.checkname += f'_{args.checkname_add}'
+
+        # if args.checkname_add is None:
+        #     if 'los_angeles' in args.data_root:
+
+        #         args.checkname = f'LA_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+        #     elif 'san_jose' in args.data_root:
+        #         args.checkname = f'SJ_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+        #     else:
+        #         args.checkname = f'{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}'
+        # else:
+        #     if 'los_angeles' in args.data_root:
+        #         args.checkname = f'LA_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+        #     elif 'san_jose' in args.data_root:
+        #         args.checkname = f'SJ_{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+        #     else:
+        #         args.checkname = f'{args.dataset}_{args.fbeta}_{args.freeze_bn}_{args.lr}_{args.weight_decay}_{args.loss_weights_param}_{args.resume}_{args.checkname_add}'
+
+    if args.preempt_robust:
+        checkpoint_name = "most_recent_epoch_checkpoint.pth.tar"
+        # check if checkname path exists
+        if os.path.exists(os.path.join('/oak/stanford/groups/deho/building_compliance/rgb-footprint-extract/weights', args.checkname, checkpoint_name)):
+            # if it does, resume from checkname. allows us to automatically restart our training job if slurm preempts
+            args.resume = os.path.join(args.checkname, checkpoint_name)
+
 
     torch.manual_seed(args.seed)
     if args.inference:
         handle_inference(args)
     elif args.evaluate:
         handle_evaluate(args)
+    elif args.minference:
+        handle_multiple_inference(args)
     else:
         handle_training(args)
 
@@ -160,6 +234,27 @@ def handle_inference(args):
     elif output_ext == ".tiff":
         raise NotImplementedError("TIFF output support is coming soon.")
 
+
+def handle_multiple_inference(args):
+    # Validate arguments
+    input_formats, output_formats = {".npy": "numpy"}, [".npy", ".png", ".tiff"]
+
+    #get_ext = lambda filename: os.path.splitext(filename)[-1] if filename else None
+    #input_ext, output_ext = get_ext(args.input_filename), get_ext(args.output_filename)
+    #assert args.input_filename and input_ext in input_formats, f"Accepted input file formats: {input_formats.keys()}"
+    #assert args.output_filename and output_ext in output_formats, f"Accepted output formats: {output_formats}"
+
+    if args.window_size or args.stride:
+        assert args.window_size and args.stride, "Both `window_size` and `stride` must be set."
+
+    #args.dataset = input_formats[os.path.splitext(args.input_filename)[-1]]
+    args.test_batch_size = 1
+    for i in ['train', 'val', 'test']:
+        tester = Tester1(args, i)
+
+        tester.infer_multiple()
+
+
 def handle_evaluate(args):
     tester = Tester(args)
     print("Experiment {} instantiated. Evaluation starting...".format(args.checkname))
@@ -171,9 +266,11 @@ def handle_training(args):
 
     print("Learning rate: {}; L2 factor: {}".format(args.lr, args.weight_decay))
     print("Experiment {} instantiated. Training starting...".format(args.checkname))
+    # NEW
+    print("Starting from epoch {}".format(trainer.start_epoch))
     print("Training for {} epochs".format(trainer.args.epochs))
     print("Batch size: {}; Test Batch Size: {}".format(args.batch_size, args.test_batch_size))
-    for epoch in range(trainer.args.start_epoch, trainer.args.epochs):
+    for epoch in range(trainer.start_epoch, trainer.start_epoch+trainer.args.epochs):
         trainer.training(epoch)
         if not trainer.args.no_val:
             trainer.validation(epoch)

@@ -27,31 +27,33 @@ class Processor():
             pbar = tqdm(list(os.listdir(self.masks_path))[self.start:])
 
         for mask_path in pbar:
-            mask = np.load(os.path.join(self.masks_path, mask_path))
-            mask = (mask > 0).astype(np.int32)
+            #  new addition
+            if not os.path.exists(os.path.join(self.masks_wt_path, mask_path.replace('_mask.npy', '_mask_wt.npy'))):
+                mask = np.load(os.path.join(self.masks_path, mask_path))
+                mask = (mask > 0).astype(np.int32)
 
-            if self.resize is not None:
-                mask = self.resize_mask(mask).squeeze().astype(np.int32)
+                if self.resize is not None:
+                    mask = self.resize_mask(mask).squeeze().astype(np.int32)
 
-            mask_weight = np.expand_dims(mask, axis=0)
-            endpoint = mask.shape[0]
-            max_step = int(np.ceil(endpoint / self.inc))
+                mask_weight = np.expand_dims(mask, axis=0)
+                endpoint = mask.shape[0]
+                max_step = int(np.ceil(endpoint / self.inc))
 
-            for i in range(max_step):
-                si, ei = i*self.inc, min(endpoint, i*self.inc+self.inc)
+                for i in range(max_step):
+                    si, ei = i*self.inc, min(endpoint, i*self.inc+self.inc)
 
-                for j in range(max_step):
-                    sj, ej = j*self.inc, min(endpoint, j*self.inc+self.inc)
+                    for j in range(max_step):
+                        sj, ej = j*self.inc, min(endpoint, j*self.inc+self.inc)
 
-                    if len(np.unique(mask[si:ei, sj:ej])) > 1:
-                        mask_weight[:, si:ei, sj:ej] = self.make_weight_map(mask_weight[:, si:ei, sj:ej])
-                    else:
-                        mask_weight[:, si:ei, sj:ej] = 0
+                        if len(np.unique(mask[si:ei, sj:ej])) > 1:
+                            mask_weight[:, si:ei, sj:ej] = self.make_weight_map(mask_weight[:, si:ei, sj:ej])
+                        else:
+                            mask_weight[:, si:ei, sj:ej] = 0
 
-            np.save(
-                os.path.join(self.masks_wt_path, mask_path.replace("_mask.npy", "_mask_wt.npy")),
-                mask_weight.astype(np.uint8).squeeze()
-            )
+                np.save(
+                    os.path.join(self.masks_wt_path, mask_path.replace("_mask.npy", "_mask_wt.npy")),
+                    mask_weight.astype(np.uint8).squeeze()
+                )
 
     def resize_mask(self, mask):
         return interpolate(torch.tensor(mask).unsqueeze(0).unsqueeze(0).float(), size=self.resize, mode="nearest").detach().numpy()
@@ -117,4 +119,6 @@ if __name__ == "__main__":
         processor.process()
 
     """
-    pass
+    for i in ['train', 'val']:
+        processor = Processor(f"/oak/stanford/groups/deho/building_compliance/san_jose_naip_512/phase2/{i}/", 10, 7.5, 150)
+        processor.process()
