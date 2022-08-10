@@ -5,7 +5,7 @@ import models.utils.postprocessing as postprocessing
 # Parameters for new metrics
 SEPARATION_BUFFER = 2
 SMALL_AREA_THRESHOLD = 15
-LARGE_AREA_THRESHOLD = 160
+LARGE_AREA_THRESHOLD = 120
 ROAD_BUFFER = -5
 SMALL_BUILDING_BUFFERS = [1, 3, 5, 8, 10]
 
