@@ -398,11 +398,6 @@ class Trainer(object):
             val_metric_dict['val_SmIoU-V2-{}'.format(buffer)] = np.mean(total_SmIoU_V2[buffer])
 
 
-        val_metric_dict = {
-            "val_loss": np.mean(total_loss),
-            "val_mIOU": np.mean(total_mIOU),
-            "val_pixel_acc": np.mean(total_pixelAcc),
-            "val_f1": np.mean(total_f1)}
         self.saver.log_wandb(epoch, self.curr_step, val_metric_dict)
 
         # Save checkpoint
